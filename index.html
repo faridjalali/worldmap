@@ -32,12 +32,13 @@
             --glass: rgba(15, 15, 15, 0.85);
             --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             
-            --c-na: rgba(153, 204, 255, 0.40);
-            --c-sa: rgba(255, 153, 153, 0.40);
-            --c-eu: rgba(153, 255, 153, 0.40);
-            --c-as: rgba(255, 204, 153, 0.40);
-            --c-af: rgba(210, 180, 140, 0.40);
-            --c-oc: rgba(230, 190, 255, 0.40);
+            /* Regional Colors (40% Opacity) */
+            --c-na: rgba(153, 204, 255, 0.40); /* North America - Light Blue */
+            --c-sa: rgba(255, 153, 153, 0.40); /* South America - Light Red */
+            --c-eu: rgba(153, 255, 153, 0.40); /* Europe - Light Green */
+            --c-as: rgba(255, 204, 153, 0.40); /* Asia - Light Orange */
+            --c-af: rgba(210, 180, 140, 0.40); /* Africa - Light Brown */
+            --c-oc: rgba(230, 190, 255, 0.40); /* Oceania - Purple Tint */
         }
 
         body {
@@ -172,7 +173,7 @@
             svg = container.append("svg").attr("viewBox", `0 0 ${width} ${height}`).attr("preserveAspectRatio", "xMidYMid meet");
             g = svg.append("g");
             
-            zoom = d3.zoom().scaleExtent([1, 40]).on("zoom", (e) => {
+            zoom = d3.zoom().scaleExtent([1, 60]).on("zoom", (e) => {
                 g.attr("transform", e.transform);
                 currentScale = e.transform.k;
                 d3.selectAll(".city-node").attr("r", 4 / currentScale).attr("stroke-width", (1.5/currentScale));
@@ -181,10 +182,17 @@
 
             try {
                 const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
-                const countries = topojson.feature(world, world.objects.countries).features;
+                // Filter out Antarctica
+                const countries = topojson.feature(world, world.objects.countries).features.filter(d => d.properties.name !== "Antarctica");
                 
-                projection = d3.geoMercator().fitSize([width, height], topojson.feature(world, world.objects.countries));
+                projection = d3.geoMercator().fitSize([width, height], {type: "FeatureCollection", features: countries});
                 path = d3.geoPath().projection(projection);
+
+                // Create a clean lookup for region class assignment
+                const nameToData = {};
+                Object.entries(gameData).forEach(([iso, data]) => {
+                    nameToData[data.name] = data;
+                });
 
                 g.selectAll("path")
                     .data(countries)
@@ -192,13 +200,13 @@
                     .attr("d", path)
                     .attr("class", d => {
                         const name = d.properties.name;
-                        const entry = Object.entries(gameData).find(([isoCode, data]) => data.name === name);
-                        const region = entry ? entry[1].region : "unknown";
-                        return `country reg-${region}`;
+                        const data = nameToData[name];
+                        return data ? `country reg-${data.region}` : "country unknown";
                     })
                     .attr("id", d => {
                         const name = d.properties.name;
-                        const entry = Object.entries(gameData).find(([isoCode, data]) => data.name === name);
+                        // Find the ISO key from gameData where the name matches
+                        const entry = Object.entries(gameData).find(([iso, val]) => val.name === name);
                         return entry ? `country-${entry[0]}` : `country-unknown`;
                     })
                     .on("click", handleCountryClick);
@@ -248,8 +256,9 @@
                 score -= 10; updateScoreUI();
                 flashState(this, "wrong");
                 const wrongName = d.properties.name || "Unknown territory";
+                const targetName = gameData[currentTargetISO].name;
                 document.getElementById("find-label").innerText = "Find";
-                document.getElementById("main-prompt").innerText = gameData[currentTargetISO].name;
+                document.getElementById("main-prompt").innerText = targetName;
                 document.getElementById("sub-prompt").innerHTML = `That is <span class="wrong-state-highlight">${wrongName}</span>`;
             }
         }
@@ -269,7 +278,7 @@
                 document.getElementById("main-prompt").innerText = data.facts[targetCityName];
             }
             plotCities(iso);
-            setTimeout(() => { d3.selectAll(".city-node").style("pointer-events", "auto"); }, 1000);
+            setTimeout(() => { d3.selectAll(".city-node").style("pointer-events", "auto"); }, 1200);
         }
 
         function plotCities(iso) {
@@ -282,7 +291,7 @@
                 .attr("class", "city-node").attr("cx", d => d.x).attr("cy", d => d.y).attr("r", 0)
                 .on("mouseover", showTooltip).on("mousemove", moveTooltip).on("mouseout", hideTooltip)
                 .on("click", (e, d) => handleCityClick(e, d, iso))
-                .transition().duration(500).delay(600).attr("r", 5 / currentScale);
+                .transition().duration(500).delay(800).attr("r", 5 / currentScale);
         }
 
         function handleCityClick(event, cityNode, iso) {
