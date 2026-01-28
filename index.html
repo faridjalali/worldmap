@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Maps Quiz | World Edition</title>
+    <title>Maps Quiz</title>
     
     <link rel="icon" href="icon_0.jpg" type="image/jpeg">
     <link rel="apple-touch-icon" href="icon_0.jpg">
@@ -14,17 +14,17 @@
     <script src="https://unpkg.com/topojson-client@3"></script>
     
     <script>const gameData = {};</script>
-    <script src="africa.js"></script>
-    <script src="asia.js"></script>
-    <script src="europe.js"></script>
     <script src="north_america.js"></script>
     <script src="south_america.js"></script>
+    <script src="europe.js"></script>
+    <script src="africa.js"></script>
+    <script src="asia.js"></script>
     <script src="oceania.js"></script>
     
     <style>
         :root {
             --bg-deep: #050505;
-            --map-stroke: rgba(255, 255, 255, 0.12);
+            --map-stroke: rgba(255, 255, 255, 0.15);
             --neon-blue: #00f3ff;
             --neon-pink: #ff0055;
             --neon-green: #00ff9d;
@@ -32,30 +32,29 @@
             --glass: rgba(15, 15, 15, 0.85);
             --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             
-            /* Regional Colors (40% Opacity) */
-            --c-na: rgba(153, 204, 255, 0.40); /* North America - Light Blue */
-            --c-sa: rgba(255, 153, 153, 0.40); /* South America - Light Red */
-            --c-eu: rgba(153, 255, 153, 0.40); /* Europe - Light Green */
-            --c-as: rgba(255, 204, 153, 0.40); /* Asia - Light Orange */
-            --c-af: rgba(210, 180, 140, 0.40); /* Africa - Light Brown */
-            --c-oc: rgba(230, 190, 255, 0.40); /* Oceania - Purple Tint */
+            --c-southwest: rgba(255, 153, 153, 0.40);
+            --c-western: rgba(153, 255, 153, 0.40);
+            --c-northeast: rgba(153, 204, 255, 0.40);
+            --c-midwest: rgba(255, 204, 153, 0.40);
+            --c-southeast: rgba(210, 180, 140, 0.40);
+            --c-oceania: rgba(230, 190, 255, 0.40);
         }
 
         body {
             margin: 0; background-color: var(--bg-deep); color: white;
             font-family: var(--font-main); overflow: hidden; height: 100vh;
-            width: 100vw; user-select: none; touch-action: none; padding-top: 40px; box-sizing: border-box;
+            width: 100vw; user-select: none; touch-action: none; padding-top: 60px; box-sizing: border-box;
         }
 
-        #map-stage { width: 100%; height: calc(100% - 40px); cursor: crosshair; }
+        #map-stage { width: 100%; height: calc(100% - 60px); cursor: crosshair; }
 
         .country { stroke: var(--map-stroke); stroke-width: 0.3px; transition: fill 0.3s, opacity 0.3s; vector-effect: non-scaling-stroke; fill: #222; }
-        .reg-north_america { fill: var(--c-na); }
-        .reg-south_america { fill: var(--c-sa); }
-        .reg-europe { fill: var(--c-eu); }
-        .reg-asia { fill: var(--c-as); }
-        .reg-africa { fill: var(--c-af); }
-        .reg-oceania { fill: var(--c-oc); }
+        .reg-north_america { fill: var(--c-northeast); }
+        .reg-south_america { fill: var(--c-southwest); }
+        .reg-europe { fill: var(--c-western); }
+        .reg-africa { fill: var(--c-southeast); }
+        .reg-asia { fill: var(--c-midwest); }
+        .reg-oceania { fill: var(--c-oceania); }
 
         .country:hover { opacity: 0.8; stroke: rgba(255,255,255,0.4); }
         .country.active-focused { opacity: 1; stroke: #fff; stroke-width: 1.5px; }
@@ -73,7 +72,7 @@
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
 
         #top-hud {
-            position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
+            position: absolute; top: 30px; left: 50%; transform: translateX(-50%);
             background: var(--glass); border: 1px solid rgba(255,255,255,0.1);
             padding: 10px 30px; border-radius: 50px; display: flex; gap: 40px;
             backdrop-filter: blur(15px); z-index: 10; pointer-events: auto;
@@ -110,7 +109,7 @@
         .next-btn:hover { background: white; transform: scale(1.05); }
 
         @media (max-width: 600px) {
-            #top-hud { gap: 20px; padding: 10px 15px; }
+            #top-hud { gap: 15px; padding: 10px 15px; top: 40px; }
             #main-prompt { font-size: 1.2rem; }
         }
     </style>
@@ -139,7 +138,7 @@
         </div>
         <div id="prompt-container">
             <p id="find-label">Initializing...</p>
-            <h1 id="main-prompt">Syncing Global Data...</h1>
+            <h1 id="main-prompt">Syncing Satellite...</h1>
             <div id="sub-prompt"></div>
         </div>
     </div>
@@ -173,7 +172,7 @@
             svg = container.append("svg").attr("viewBox", `0 0 ${width} ${height}`).attr("preserveAspectRatio", "xMidYMid meet");
             g = svg.append("g");
             
-            zoom = d3.zoom().scaleExtent([1, 60]).on("zoom", (e) => {
+            zoom = d3.zoom().scaleExtent([1, 80]).on("zoom", (e) => {
                 g.attr("transform", e.transform);
                 currentScale = e.transform.k;
                 d3.selectAll(".city-node").attr("r", 4 / currentScale).attr("stroke-width", (1.5/currentScale));
@@ -182,32 +181,26 @@
 
             try {
                 const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
-                // Filter out Antarctica
                 const countries = topojson.feature(world, world.objects.countries).features.filter(d => d.properties.name !== "Antarctica");
                 
-                projection = d3.geoMercator().fitSize([width, height], {type: "FeatureCollection", features: countries});
+                projection = d3.geoMercator().fitSize([width, height * 0.8], {type: "FeatureCollection", features: countries});
                 path = d3.geoPath().projection(projection);
 
-                // Create a clean lookup for region class assignment
-                const nameToData = {};
-                Object.entries(gameData).forEach(([iso, data]) => {
-                    nameToData[data.name] = data;
-                });
+                const nameToISO = {};
+                Object.entries(gameData).forEach(([iso, data]) => { nameToISO[data.name] = iso; });
 
                 g.selectAll("path")
                     .data(countries)
                     .enter().append("path")
                     .attr("d", path)
                     .attr("class", d => {
-                        const name = d.properties.name;
-                        const data = nameToData[name];
-                        return data ? `country reg-${data.region}` : "country unknown";
+                        const iso = nameToISO[d.properties.name];
+                        const region = iso ? gameData[iso].region : "unknown";
+                        return `country reg-${region}`;
                     })
                     .attr("id", d => {
-                        const name = d.properties.name;
-                        // Find the ISO key from gameData where the name matches
-                        const entry = Object.entries(gameData).find(([iso, val]) => val.name === name);
-                        return entry ? `country-${entry[0]}` : `country-unknown`;
+                        const iso = nameToISO[d.properties.name];
+                        return iso ? `country-${iso}` : `country-unknown`;
                     })
                     .on("click", handleCountryClick);
 
@@ -256,9 +249,8 @@
                 score -= 10; updateScoreUI();
                 flashState(this, "wrong");
                 const wrongName = d.properties.name || "Unknown territory";
-                const targetName = gameData[currentTargetISO].name;
                 document.getElementById("find-label").innerText = "Find";
-                document.getElementById("main-prompt").innerText = targetName;
+                document.getElementById("main-prompt").innerText = gameData[currentTargetISO].name;
                 document.getElementById("sub-prompt").innerHTML = `That is <span class="wrong-state-highlight">${wrongName}</span>`;
             }
         }
@@ -329,7 +321,7 @@
 
         function zoomToCountry(d) {
             const b = path.bounds(d);
-            const s = Math.max(1, Math.min(25, 0.7 / Math.max((b[1][0] - b[0][0]) / width, (b[1][1] - b[0][1]) / height)));
+            const s = Math.max(1, Math.min(60, 0.7 / Math.max((b[1][0] - b[0][0]) / width, (b[1][1] - b[0][1]) / height)));
             const t = [width / 2 - s * (b[0][0] + b[1][0]) / 2, height / 2 - s * (b[0][1] + b[1][1]) / 2];
             svg.transition().duration(1200).call(zoom.transform, d3.zoomIdentity.translate(t[0], t[1]).scale(s));
         }
