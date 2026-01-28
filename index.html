@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>World Maps Quiz | Leaflet Engine</title>
+    <title>Maps Quiz | ISO Standard</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
@@ -63,16 +63,17 @@
 
         /* City Marker Styles */
         .city-marker {
-            background: #00f3ff;
-            border: 1px solid rgba(255,255,255,0.8);
-            border-radius: 50%;
-            box-shadow: 0 0 10px #00f3ff;
-            transition: all 0.3s;
+            /* No default border to keep it tiny */
+            stroke: none;
+            transition: all 0.2s;
+            cursor: pointer; 
         }
+        /* Only add a halo on hover to indicate interactability */
         .city-marker:hover {
-            background: white;
-            width: 12px !important; height: 12px !important;
-            margin-left: -6px !important; margin-top: -6px !important;
+            stroke: white;
+            stroke-width: 2px;
+            fill: #00f3ff;
+            fill-opacity: 1;
         }
     </style>
 
@@ -102,7 +103,7 @@
             </div>
         </div>
         <div id="prompt-container">
-            <h1 id="main-prompt">Loading World Data...</h1>
+            <h1 id="main-prompt">Initializing...</h1>
             <div id="sub-prompt"></div>
         </div>
     </div>
@@ -125,20 +126,20 @@
         let cityMarkers = [];
         let targetCityName = "";
 
-        // Continent Colors
+        // Region Colors (Matches your previous request)
         const regionColors = {
-            "north_america": "#4facfe",
-            "south_america": "#ff5e62",
-            "europe": "#43e97b",
-            "africa": "#fa709a", // Orange-Pink
-            "asia": "#f09819",
-            "oceania": "#a18cd1"
+            "north_america": "#4facfe", // Blue
+            "south_america": "#ff5e62", // Red
+            "europe": "#43e97b",        // Green
+            "africa": "#fa709a",        // Orange/Pink tone
+            "asia": "#f09819",          // Orange/Brown
+            "oceania": "#a18cd1"        // Purple
         };
 
         window.onload = initMap;
 
         async function initMap() {
-            // 1. Initialize Leaflet
+            // 1. Initialize Leaflet with dark background
             map = L.map('map', {
                 center: [20, 0],
                 zoom: 2,
@@ -149,8 +150,9 @@
                 maxBounds: [[-90, -180], [90, 180]]
             });
 
-            // 2. Load Robust GeoJSON (matches ISO Codes like "USA", "FRA")
-            const response = await fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json');
+            // 2. Load "Natural Earth" GeoJSON 
+            // This source specifically uses ISO Alpha-3 codes (ADM0_A3) which matches your data files (GHA, BRA, etc.)
+            const response = await fetch('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson');
             const data = await response.json();
 
             // 3. Style and Logic Layer
@@ -163,20 +165,25 @@
         }
 
         function styleFeature(feature) {
-            // THE FIX: Direct ISO Lookup. No name matching.
-            const iso = feature.id; 
+            // FIX: Use ADM0_A3 (ISO 3-letter code) to link Map -> GameData
+            // This guarantees that "GHA" in map matches "GHA" in your africa.js
+            let iso = feature.properties.ADM0_A3;
+            
+            // Edge case fixes for Natural Earth inconsistencies
+            if(iso === "SDS") iso = "SSD"; // South Sudan fix
+            
             const entry = gameData[iso];
             
-            // If country exists in your .js file, color it. If not, make it dark grey.
             if (entry) {
                 return {
                     fillColor: regionColors[entry.region],
-                    weight: 1, // Visible border
+                    weight: 1, 
                     opacity: 1,
-                    color: 'rgba(255,255,255,0.3)', // Border color
+                    color: 'rgba(255,255,255,0.2)', // Border color
                     fillOpacity: 0.4
                 };
             } else {
+                // Country not in your .js files = Dark Grey
                 return {
                     fillColor: "#1a1a1a",
                     weight: 0.5,
@@ -190,8 +197,11 @@
             layer.on({
                 mouseover: (e) => {
                     const layer = e.target;
+                    let iso = feature.properties.ADM0_A3;
+                    if(iso === "SDS") iso = "SSD";
+
                     // Only highlight if it's a playable country
-                    if(gameData[feature.id]) {
+                    if(gameData[iso]) {
                         layer.setStyle({
                             weight: 2,
                             color: '#fff',
@@ -203,7 +213,11 @@
                 mouseout: (e) => {
                     geoJsonLayer.resetStyle(e.target);
                 },
-                click: (e) => handleCountryClick(feature.id, layer)
+                click: (e) => {
+                    let iso = feature.properties.ADM0_A3;
+                    if(iso === "SDS") iso = "SSD";
+                    handleCountryClick(iso, layer);
+                }
             });
         }
 
@@ -221,12 +235,10 @@
             visited.add(currentTargetISO);
             currentPhase = "MAP";
             
-            // Reset View
             map.setView([20, 0], 2);
             clearCities();
             document.getElementById('fact-overlay').classList.remove('show');
             
-            // UI Update
             document.getElementById('main-prompt').innerText = gameData[currentTargetISO].name;
             document.getElementById('sub-prompt').innerText = "Find this country";
             document.getElementById('score-val').innerText = score;
@@ -241,7 +253,7 @@
                 transitionToCity(iso, layer);
             } else {
                 score -= 5;
-                const clickedName = gameData[iso] ? gameData[iso].name : "Unknown";
+                const clickedName = gameData[iso] ? gameData[iso].name : "Unknown Area";
                 flashMessage(`Wrong! That is ${clickedName}`, "#ff0055");
             }
             document.getElementById('score-val').innerText = score;
@@ -254,13 +266,11 @@
             // Zoom to country
             map.fitBounds(layer.getBounds(), { padding: [50, 50], maxZoom: 6 });
 
-            // Setup Question
             if (isCapitalMode) {
                 targetCityName = data.capital;
                 document.getElementById('main-prompt').innerText = `Find Capital: ${data.capital}`;
                 document.getElementById('sub-prompt').innerText = data.name;
             } else {
-                // Fact mode
                 const cities = Object.keys(data.cities);
                 targetCityName = cities[Math.floor(Math.random() * cities.length)];
                 document.getElementById('main-prompt').innerText = "Find the city matching this fact:";
@@ -269,21 +279,28 @@
 
             // Plot Cities
             Object.entries(data.cities).forEach(([city, coords]) => {
-                // GeoJSON is Lon/Lat, Leaflet is Lat/Lon
+                // GeoJSON/D3 is [Lon, Lat], Leaflet uses [Lat, Lon]
                 const latLng = [coords[1], coords[0]]; 
                 
                 const marker = L.circleMarker(latLng, {
-                    radius: 5, // Small base radius
+                    radius: 4, // Small base radius
                     fillColor: "#00f3ff",
-                    color: "#fff",
-                    weight: 1,
+                    color: "#00f3ff", // Same as fill to hide border initially
+                    weight: 0, // No border by default
                     opacity: 1,
-                    fillOpacity: 0.8,
-                    className: 'city-marker' // Custom CSS class for hover
+                    fillOpacity: 0.9,
+                    className: 'city-marker',
+                    interactive: true // ENSURES CLICKABILITY
                 }).addTo(map);
 
-                marker.on('click', () => handleCityClick(city, iso));
-                marker.bindTooltip(city, { permanent: false, direction: 'top' });
+                marker.on('click', (e) => {
+                    L.DomEvent.stopPropagation(e); // Stop click from hitting map layer
+                    handleCityClick(city, iso);
+                });
+                
+                // IMPORTANT: Bring markers to front so they aren't buried by map layers
+                marker.bringToFront(); 
+                
                 cityMarkers.push(marker);
             });
         }
