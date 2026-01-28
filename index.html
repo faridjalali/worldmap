@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Maps Quiz | Final Fixes</title>
+    <title>Maps Quiz | Final Edition</title>
     
     <link rel="icon" href="icon_0.jpg" type="image/jpeg">
     <link rel="apple-touch-icon" href="icon_0.jpg">
@@ -32,12 +32,12 @@
             --glass: rgba(15, 15, 15, 0.9);
             --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
             
-            /* Unified Color Palette */
-            --c-na: rgba(153, 204, 255, 0.45); /* North America - Blue */
-            --c-sa: rgba(255, 153, 153, 0.45); /* South America - Red */
+            /* CONTINENT PALETTE */
+            --c-na: rgba(153, 204, 255, 0.45); /* N. America - Blue */
+            --c-sa: rgba(255, 153, 153, 0.45); /* S. America - Red */
             --c-eu: rgba(153, 255, 153, 0.45); /* Europe - Green */
             --c-af: rgba(255, 204, 153, 0.50); /* Africa - Orange */
-            --c-as: rgba(210, 180, 140, 0.45); /* Asia - Brown */
+            --c-as: rgba(210, 180, 140, 0.45); /* Asia - Brown/Tan */
             --c-oc: rgba(230, 190, 255, 0.45); /* Oceania - Purple */
         }
 
@@ -49,10 +49,16 @@
 
         #map-stage { width: 100%; height: calc(100% - 60px); cursor: crosshair; }
 
-        /* Default fill for countries not found in data is dark gray instead of white/black */
-        .country { stroke: var(--map-stroke); stroke-width: 0.3px; transition: fill 0.3s, opacity 0.3s; vector-effect: non-scaling-stroke; fill: #1a1a1a; }
+        /* Base Country Style */
+        .country { 
+            stroke: var(--map-stroke); 
+            stroke-width: 0.3px; 
+            transition: fill 0.3s, opacity 0.3s; 
+            vector-effect: non-scaling-stroke; 
+            fill: #1a1a1a; /* Default dark fill for missing data */
+        }
         
-        /* Shading Class Logic */
+        /* Shading Classes */
         .reg-north_america { fill: var(--c-na); }
         .reg-south_america { fill: var(--c-sa); }
         .reg-europe { fill: var(--c-eu); }
@@ -68,11 +74,11 @@
         @keyframes flashSuccess { 0% { fill: var(--neon-green); } 100% { fill: inherit; } }
         @keyframes flashError { 0% { fill: var(--neon-pink); } 100% { fill: inherit; } }
 
-        /* ---- FIXED CITY HALO SIZE ---- */
+        /* ---- FIX: ULTRA-THIN CITY HALO ---- */
         .city-node {
             fill: var(--neon-blue);
-            stroke: rgba(0, 243, 255, 0.4); /* Slightly more opaque for visibility with thinner stroke */
-            stroke-width: 1px; /* Drastically reduced from 4px */
+            stroke: rgba(0, 243, 255, 0.6); 
+            stroke-width: 0.5px; /* Tiny base width */
             cursor: pointer;
             transition: all 0.3s;
             pointer-events: none;
@@ -80,10 +86,8 @@
         .city-node:hover {
             fill: #fff;
             stroke: var(--neon-blue);
-            stroke-width: 3px; /* Reduced from 7px */
+            stroke-width: 1.5px; /* Minimal hover expansion */
         }
-        /* --------------------------- */
-
         .city-node.wrong-choice { fill: var(--neon-pink); stroke: var(--neon-pink); opacity: 0.6; pointer-events: none; }
         .city-node.correct-choice { fill: var(--neon-green); stroke: var(--neon-green); }
 
@@ -98,7 +102,7 @@
 
         .hud-group { display: flex; flex-direction: column; align-items: center; min-width: 70px; }
         .hud-item { font-size: 0.7rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 2px; }
-        .hud-val { color: var(--neon-blue); font-weight: 800; font-size: 1.1rem; }
+        .hud-val { color: var(--neon-blue); font-weight: 800; font-size: 1.2rem; }
 
         .toggle-container { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
         .toggle-switch { width: 36px; height: 18px; background: #333; border-radius: 20px; position: relative; transition: 0.3s; border: 1px solid #444; }
@@ -157,7 +161,7 @@
         </div>
         <div id="prompt-container">
             <p id="find-label">Initializing...</p>
-            <h1 id="main-prompt">Calibrating System...</h1>
+            <h1 id="main-prompt">Global Scan...</h1>
             <div id="sub-prompt"></div>
         </div>
     </div>
@@ -182,42 +186,46 @@
         let isCapitalMode = true;
         let targetCityName = "";
 
-        // ---- FIXED COLORING LOGIC ----
-        // This object maps the long, formal names found in the TopoJSON map data
-        // to the shorter, common names used in your .js data files.
-        // This ensures countries like "Bolivia (Plurinational State of)" are correctly matched to "Bolivia".
+        // ---- THE MASTER FIX LIST ----
+        // Maps official TopoJSON names (Left) to your gameData.js names (Right)
         const mapToDataName = {
-            // North America
+            // NORTH AMERICA
             "United States of America": "United States",
-            // South America (Fixes white countries here)
+            "Dominican Republic": "Dominican Rep.",
+            // SOUTH AMERICA
             "Bolivia (Plurinational State of)": "Bolivia",
             "Venezuela (Bolivarian Republic of)": "Venezuela",
-            // Europe
+            // EUROPE
             "Czech Republic": "Czechia",
             "Bosnia and Herzegovina": "Bosnia and Herz.",
-            "Macedonia": "North Macedonia",
             "The former Yugoslav Republic of Macedonia": "North Macedonia",
+            "Macedonia": "North Macedonia",
             "Republic of Moldova": "Moldova",
             "Russian Federation": "Russia",
-            // Africa (Fixes South Sudan)
-            "South Sudan": "S. Sudan",
-            "Democratic Republic of the Congo": "Dem. Rep. Congo",
-            "Central African Republic": "Central African Rep.",
-            "CÃ´te d'Ivoire": "Côte d'Ivoire",
-            "Ivory Coast": "Côte d'Ivoire",
+            // AFRICA
             "United Republic of Tanzania": "Tanzania",
+            "Democratic Republic of the Congo": "Dem. Rep. Congo",
+            "Congo": "Congo",
+            "Central African Republic": "Central African Rep.",
+            "South Sudan": "S. Sudan",
+            "Ivory Coast": "Côte d'Ivoire",
+            "CÃ´te d'Ivoire": "Côte d'Ivoire",
             "Swaziland": "Eswatini",
-            // Asia (Fixes Koreas)
+            "Gambia": "Gambia",
+            "The Gambia": "Gambia",
+            // ASIA
             "Dem. Rep. Korea": "North Korea",
+            "Democratic People's Republic of Korea": "North Korea",
             "Republic of Korea": "South Korea",
             "Viet Nam": "Vietnam",
             "Lao PDR": "Laos",
-            "Syrian Arab Republic": "Syria",
             "Iran (Islamic Republic of)": "Iran",
+            "Syrian Arab Republic": "Syria",
             "Brunei Darussalam": "Brunei",
-            "East Timor": "Timor-Leste"
+            "Timor-Leste": "Timor-Leste",
+            "East Timor": "Timor-Leste",
+            "Taiwan": "Taiwan"
         };
-        // ---------------------------
 
         window.onload = initGame;
 
@@ -228,27 +236,29 @@
             svg = container.append("svg").attr("viewBox", `0 0 ${width} ${height}`).attr("preserveAspectRatio", "xMidYMid meet");
             g = svg.append("g");
             
+            // ZOOM logic: Halo size dynamically shrinks to stay hairline thin
             zoom = d3.zoom().scaleExtent([1, 80]).on("zoom", (e) => {
                 g.attr("transform", e.transform);
                 currentScale = e.transform.k;
-                // Keep cities small during zoom
-                d3.selectAll(".city-node").attr("r", 4 / currentScale).attr("stroke-width", (1/currentScale));
+                d3.selectAll(".city-node")
+                  .attr("r", 4 / currentScale)
+                  .attr("stroke-width", (0.5 / currentScale)); // Ensures halo stays tiny
             });
             svg.call(zoom);
 
             try {
                 const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
+                // Remove Antarctica
                 const countries = topojson.feature(world, world.objects.countries).features.filter(d => d.properties.name !== "Antarctica");
                 
                 projection = d3.geoMercator().fitSize([width, height * 0.85], {type: "FeatureCollection", features: countries});
                 path = d3.geoPath().projection(projection);
 
-                // Helper function to find the data entry using the normalization map
+                // Helper to normalize names
                 const findDataForMapName = (name) => {
-                    // First, try translating the name; if no translation, use original
-                    const normalizedName = mapToDataName[name] || name;
-                    // Find the data entry where the name matches the normalized name
-                    return Object.entries(gameData).find(([iso, data]) => data.name === normalizedName);
+                    const normalized = mapToDataName[name] || name;
+                    // Find matching key in gameData
+                    return Object.entries(gameData).find(([iso, data]) => data.name === normalized);
                 };
 
                 g.selectAll("path")
@@ -257,7 +267,6 @@
                     .attr("d", path)
                     .attr("class", d => {
                         const entry = findDataForMapName(d.properties.name);
-                        // If data exists, assign region class. If not, it remains base color.
                         const region = entry ? entry[1].region : "unknown";
                         return `country reg-${region}`;
                     })
@@ -313,7 +322,6 @@
             } else {
                 score -= 10; updateScoreUI();
                 flashState(this, "wrong");
-                // Display the normalized name if available, otherwise the map name
                 const mapName = d.properties.name;
                 const wrongName = mapToDataName[mapName] || mapName || "Unknown territory";
                 document.getElementById("find-label").innerText = "Find";
