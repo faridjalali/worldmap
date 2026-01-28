@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Maps Quiz | Consistent Edition</title>
+    <title>Maps Quiz | Final Fixes</title>
     
     <link rel="icon" href="icon_0.jpg" type="image/jpeg">
     <link rel="apple-touch-icon" href="icon_0.jpg">
@@ -49,6 +49,7 @@
 
         #map-stage { width: 100%; height: calc(100% - 60px); cursor: crosshair; }
 
+        /* Default fill for countries not found in data is dark gray instead of white/black */
         .country { stroke: var(--map-stroke); stroke-width: 0.3px; transition: fill 0.3s, opacity 0.3s; vector-effect: non-scaling-stroke; fill: #1a1a1a; }
         
         /* Shading Class Logic */
@@ -67,8 +68,22 @@
         @keyframes flashSuccess { 0% { fill: var(--neon-green); } 100% { fill: inherit; } }
         @keyframes flashError { 0% { fill: var(--neon-pink); } 100% { fill: inherit; } }
 
-        .city-node { fill: var(--neon-blue); stroke: rgba(0, 243, 255, 0.2); stroke-width: 4px; cursor: pointer; transition: all 0.3s; pointer-events: none; }
-        .city-node:hover { fill: #fff; stroke: var(--neon-blue); stroke-width: 7px; }
+        /* ---- FIXED CITY HALO SIZE ---- */
+        .city-node {
+            fill: var(--neon-blue);
+            stroke: rgba(0, 243, 255, 0.4); /* Slightly more opaque for visibility with thinner stroke */
+            stroke-width: 1px; /* Drastically reduced from 4px */
+            cursor: pointer;
+            transition: all 0.3s;
+            pointer-events: none;
+        }
+        .city-node:hover {
+            fill: #fff;
+            stroke: var(--neon-blue);
+            stroke-width: 3px; /* Reduced from 7px */
+        }
+        /* --------------------------- */
+
         .city-node.wrong-choice { fill: var(--neon-pink); stroke: var(--neon-pink); opacity: 0.6; pointer-events: none; }
         .city-node.correct-choice { fill: var(--neon-green); stroke: var(--neon-green); }
 
@@ -142,7 +157,7 @@
         </div>
         <div id="prompt-container">
             <p id="find-label">Initializing...</p>
-            <h1 id="main-prompt">Calibrating...</h1>
+            <h1 id="main-prompt">Calibrating System...</h1>
             <div id="sub-prompt"></div>
         </div>
     </div>
@@ -167,21 +182,42 @@
         let isCapitalMode = true;
         let targetCityName = "";
 
-        // BRIDGE: Maps TopoJSON names to your .js file names
+        // ---- FIXED COLORING LOGIC ----
+        // This object maps the long, formal names found in the TopoJSON map data
+        // to the shorter, common names used in your .js data files.
+        // This ensures countries like "Bolivia (Plurinational State of)" are correctly matched to "Bolivia".
         const mapToDataName = {
+            // North America
             "United States of America": "United States",
+            // South America (Fixes white countries here)
+            "Bolivia (Plurinational State of)": "Bolivia",
+            "Venezuela (Bolivarian Republic of)": "Venezuela",
+            // Europe
+            "Czech Republic": "Czechia",
+            "Bosnia and Herzegovina": "Bosnia and Herz.",
+            "Macedonia": "North Macedonia",
+            "The former Yugoslav Republic of Macedonia": "North Macedonia",
+            "Republic of Moldova": "Moldova",
+            "Russian Federation": "Russia",
+            // Africa (Fixes South Sudan)
             "South Sudan": "S. Sudan",
+            "Democratic Republic of the Congo": "Dem. Rep. Congo",
+            "Central African Republic": "Central African Rep.",
+            "CÃ´te d'Ivoire": "Côte d'Ivoire",
+            "Ivory Coast": "Côte d'Ivoire",
+            "United Republic of Tanzania": "Tanzania",
+            "Swaziland": "Eswatini",
+            // Asia (Fixes Koreas)
             "Dem. Rep. Korea": "North Korea",
             "Republic of Korea": "South Korea",
-            "Russian Federation": "Russia",
             "Viet Nam": "Vietnam",
             "Lao PDR": "Laos",
-            "Czech Republic": "Czechia",
-            "United Kingdom": "United Kingdom",
-            "Tanzania": "Tanzania",
-            "Central African Republic": "Central African Rep.",
-            "Bosnia and Herzegovina": "Bosnia and Herz."
+            "Syrian Arab Republic": "Syria",
+            "Iran (Islamic Republic of)": "Iran",
+            "Brunei Darussalam": "Brunei",
+            "East Timor": "Timor-Leste"
         };
+        // ---------------------------
 
         window.onload = initGame;
 
@@ -195,7 +231,8 @@
             zoom = d3.zoom().scaleExtent([1, 80]).on("zoom", (e) => {
                 g.attr("transform", e.transform);
                 currentScale = e.transform.k;
-                d3.selectAll(".city-node").attr("r", 4 / currentScale).attr("stroke-width", (1.5/currentScale));
+                // Keep cities small during zoom
+                d3.selectAll(".city-node").attr("r", 4 / currentScale).attr("stroke-width", (1/currentScale));
             });
             svg.call(zoom);
 
@@ -203,12 +240,14 @@
                 const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
                 const countries = topojson.feature(world, world.objects.countries).features.filter(d => d.properties.name !== "Antarctica");
                 
-                projection = d3.geoMercator().fitSize([width, height * 0.8], {type: "FeatureCollection", features: countries});
+                projection = d3.geoMercator().fitSize([width, height * 0.85], {type: "FeatureCollection", features: countries});
                 path = d3.geoPath().projection(projection);
 
-                // Build a helper to find gameData entries based on TopoJSON names
+                // Helper function to find the data entry using the normalization map
                 const findDataForMapName = (name) => {
+                    // First, try translating the name; if no translation, use original
                     const normalizedName = mapToDataName[name] || name;
+                    // Find the data entry where the name matches the normalized name
                     return Object.entries(gameData).find(([iso, data]) => data.name === normalizedName);
                 };
 
@@ -218,6 +257,7 @@
                     .attr("d", path)
                     .attr("class", d => {
                         const entry = findDataForMapName(d.properties.name);
+                        // If data exists, assign region class. If not, it remains base color.
                         const region = entry ? entry[1].region : "unknown";
                         return `country reg-${region}`;
                     })
@@ -273,7 +313,9 @@
             } else {
                 score -= 10; updateScoreUI();
                 flashState(this, "wrong");
-                const wrongName = d.properties.name || "Unknown territory";
+                // Display the normalized name if available, otherwise the map name
+                const mapName = d.properties.name;
+                const wrongName = mapToDataName[mapName] || mapName || "Unknown territory";
                 document.getElementById("find-label").innerText = "Find";
                 document.getElementById("main-prompt").innerText = gameData[currentTargetISO].name;
                 document.getElementById("sub-prompt").innerHTML = `That is <span class="wrong-state-highlight">${wrongName}</span>`;
