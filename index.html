@@ -2,17 +2,80 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Maps Quiz | Final Stable</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>World Maps Quiz | Leaflet Engine</title>
     
-    <link rel="icon" href="icon_0.jpg" type="image/jpeg">
-    <link rel="apple-touch-icon" href="icon_0.jpg">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <style>
+        body { margin: 0; padding: 0; background-color: #050505; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+        
+        #map { width: 100vw; height: 100vh; background: #050505; }
 
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://unpkg.com/topojson-client@3"></script>
-    
+        /* UI Overlay */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; }
+        
+        #top-hud {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(15, 15, 15, 0.9); border: 1px solid rgba(255,255,255,0.2);
+            padding: 10px 40px; border-radius: 50px; display: flex; gap: 50px;
+            backdrop-filter: blur(10px); pointer-events: auto;
+        }
+
+        .hud-item { text-align: center; }
+        .hud-label { display: block; font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 2px; }
+        .hud-val { color: #00f3ff; font-weight: 800; font-size: 1.4rem; }
+
+        #prompt-container { 
+            position: absolute; top: 15%; width: 100%; text-align: center; 
+            text-shadow: 0 4px 15px black; pointer-events: none;
+        }
+        #main-prompt { font-size: 2.5rem; color: white; font-weight: 900; margin: 0; }
+        #sub-prompt { font-size: 1.2rem; color: #00f3ff; margin-top: 10px; font-weight: 600; }
+
+        /* Mode Toggle */
+        .toggle-btn {
+            background: #333; border: 1px solid #555; color: white;
+            padding: 5px 15px; border-radius: 20px; cursor: pointer;
+            font-size: 0.8rem; text-transform: uppercase; margin-top: 5px;
+        }
+        .toggle-btn.active { background: #00f3ff; color: black; border-color: #00f3ff; font-weight: bold; }
+
+        /* Fact Card */
+        #fact-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
+            display: flex; justify-content: center; align-items: center; 
+            opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 2000;
+        }
+        #fact-overlay.show { opacity: 1; pointer-events: auto; }
+        
+        .fact-card {
+            background: #111; border: 2px solid #00f3ff; border-radius: 20px; 
+            padding: 40px; max-width: 500px; width: 90%; text-align: center; color: white;
+        }
+        .fact-title { font-size: 2rem; margin: 0 0 20px; color: #fff; }
+        .fact-text { font-size: 1.1rem; line-height: 1.6; color: #ccc; margin-bottom: 30px; }
+        .next-btn {
+            background: #00f3ff; color: black; border: none; padding: 15px 40px;
+            font-size: 1rem; font-weight: bold; border-radius: 30px; cursor: pointer;
+        }
+        .next-btn:hover { transform: scale(1.05); background: white; }
+
+        /* City Marker Styles */
+        .city-marker {
+            background: #00f3ff;
+            border: 1px solid rgba(255,255,255,0.8);
+            border-radius: 50%;
+            box-shadow: 0 0 10px #00f3ff;
+            transition: all 0.3s;
+        }
+        .city-marker:hover {
+            background: white;
+            width: 12px !important; height: 12px !important;
+            margin-left: -6px !important; margin-top: -6px !important;
+        }
+    </style>
+
     <script>const gameData = {};</script>
     <script src="north_america.js"></script>
     <script src="south_america.js"></script>
@@ -21,431 +84,255 @@
     <script src="asia.js"></script>
     <script src="oceania.js"></script>
     
-    <style>
-        :root {
-            --bg-deep: #050505;
-            --map-stroke: rgba(255, 255, 255, 0.3); /* Visible, crisp borders */
-            --neon-blue: #00f3ff;
-            --neon-pink: #ff0055;
-            --neon-green: #00ff9d;
-            --neon-amber: #ffaa00;
-            --glass: rgba(15, 15, 15, 0.95);
-            --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            
-            /* Unified Color Palette */
-            --c-na: rgba(153, 204, 255, 0.55); /* North America - Blue */
-            --c-sa: rgba(255, 153, 153, 0.55); /* South America - Red */
-            --c-eu: rgba(153, 255, 153, 0.55); /* Europe - Green */
-            --c-af: rgba(255, 204, 153, 0.60); /* Africa - Orange */
-            --c-as: rgba(210, 180, 140, 0.55); /* Asia - Brown */
-            --c-oc: rgba(230, 190, 255, 0.55); /* Oceania - Purple */
-        }
-
-        body {
-            margin: 0; background-color: var(--bg-deep); color: white;
-            font-family: var(--font-main); overflow: hidden; height: 100vh;
-            width: 100vw; user-select: none; touch-action: none; padding-top: 60px; box-sizing: border-box;
-        }
-
-        #map-stage { width: 100%; height: calc(100% - 60px); cursor: crosshair; }
-
-        /* Country Styling */
-        .country { 
-            stroke: var(--map-stroke); 
-            stroke-width: 0.5px; 
-            transition: fill 0.3s, opacity 0.3s; 
-            vector-effect: non-scaling-stroke; 
-            fill: #1a1a1a; 
-        }
-        
-        /* Region Classes */
-        .reg-north_america { fill: var(--c-na); }
-        .reg-south_america { fill: var(--c-sa); }
-        .reg-europe { fill: var(--c-eu); }
-        .reg-africa { fill: var(--c-af); }
-        .reg-asia { fill: var(--c-as); }
-        .reg-oceania { fill: var(--c-oc); }
-
-        .country:hover { opacity: 0.8; stroke: #fff; stroke-width: 1.2px; }
-        .country.active-focused { opacity: 1; stroke: #fff; stroke-width: 1.5px; }
-
-        .country.correct-flash { animation: flashSuccess 0.5s forwards; }
-        .country.wrong-flash { animation: flashError 0.5s forwards; }
-        @keyframes flashSuccess { 0% { fill: var(--neon-green); } 100% { fill: inherit; } }
-        @keyframes flashError { 0% { fill: var(--neon-pink); } 100% { fill: inherit; } }
-
-        /* ---- MICROSCOPIC CITY NODES ---- */
-        .city-node {
-            fill: var(--neon-blue);
-            stroke: rgba(0, 243, 255, 0.8); 
-            stroke-width: 0px; /* No default halo */
-            cursor: pointer;
-            transition: all 0.2s;
-            pointer-events: none;
-        }
-        .city-node:hover {
-            fill: #fff;
-            stroke: var(--neon-blue);
-            stroke-width: 0.5px; /* Micro halo on hover */
-        }
-        .city-node.wrong-choice { fill: var(--neon-pink); stroke: var(--neon-pink); opacity: 0.8; pointer-events: none; }
-        .city-node.correct-choice { fill: var(--neon-green); stroke: var(--neon-green); }
-
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-
-        #top-hud {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            background: var(--glass); border: 1px solid rgba(255,255,255,0.1);
-            padding: 10px 30px; border-radius: 50px; display: flex; gap: 40px;
-            backdrop-filter: blur(15px); z-index: 10; pointer-events: auto;
-        }
-
-        .hud-group { display: flex; flex-direction: column; align-items: center; min-width: 70px; }
-        .hud-item { font-size: 0.7rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 2px; }
-        .hud-val { color: var(--neon-blue); font-weight: 800; font-size: 1.2rem; }
-
-        .toggle-container { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
-        .toggle-switch { width: 36px; height: 18px; background: #333; border-radius: 20px; position: relative; transition: 0.3s; border: 1px solid #444; }
-        .toggle-knob { width: 14px; height: 14px; background: white; border-radius: 50%; position: absolute; top: 1px; left: 2px; transition: 0.3s; }
-        .active .toggle-switch { background: var(--neon-blue); }
-        .active .toggle-knob { left: 18px; }
-
-        #prompt-container { position: absolute; top: 20%; width: 100%; text-align: center; text-shadow: 0 5px 25px black; padding: 0 20px; box-sizing: border-box; }
-        #find-label { font-size: 1rem; text-transform: uppercase; color: #888; letter-spacing: 3px; margin: 0; }
-        #main-prompt { font-size: 1.8rem; font-weight: 900; margin: 5px 0 0; transition: all 0.4s; letter-spacing: 0.5px; line-height: 1.2; max-width: 900px; display: inline-block; }
-        #sub-prompt { font-size: 1.1rem; color: var(--neon-blue); margin-top: 8px; letter-spacing: 1px; }
-
-        .wrong-state-highlight { color: var(--neon-amber); font-weight: 800; }
-
-        #city-tooltip { position: absolute; background: rgba(0,0,0,0.9); border: 1px solid var(--neon-blue); color: white; padding: 5px 12px; border-radius: 4px; font-size: 0.85rem; pointer-events: none; opacity: 0; transform: translate(-50%, -150%); white-space: nowrap; z-index: 50; }
-
-        #fact-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); backdrop-filter: blur(20px); z-index: 100; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
-        #fact-overlay.show { opacity: 1; pointer-events: auto; }
-        .fact-card { background: #111; border: 2px solid var(--neon-blue); border-radius: 20px; padding: 40px; max-width: 500px; width: 90%; text-align: center; }
-        .fact-status { font-weight: 800; letter-spacing: 4px; margin-bottom: 12px; font-size: 1rem; text-transform: uppercase; }
-        .status-correct { color: var(--neon-green); }
-        .status-wrong { color: var(--neon-pink); }
-        .fact-city { font-size: 2.2rem; margin: 0 0 15px; color: white; font-weight: 900; }
-        .fact-body { color: #ddd; line-height: 1.6; margin-bottom: 30px; font-size: 1.05rem; }
-        .next-btn { background: var(--neon-blue); color: #000; border: none; padding: 14px 40px; font-weight: 800; border-radius: 40px; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
-        .next-btn:hover { background: white; transform: scale(1.05); }
-
-        @media (max-width: 600px) {
-            #top-hud { gap: 10px; padding: 10px 15px; top: 10px; }
-            #main-prompt { font-size: 1.3rem; }
-            #prompt-container { top: 18%; }
-        }
-    </style>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
 <body>
 
-    <div id="city-tooltip">City Name</div>
-    <div id="map-stage"></div>
+    <div id="map"></div>
 
     <div id="ui-layer">
         <div id="top-hud">
-            <div class="hud-group">
-                <span class="hud-item">Target</span>
-                <span id="target-state" class="hud-val">--</span>
-            </div>
-            <div class="hud-group">
-                <span class="hud-item">Score</span>
+            <div class="hud-item">
+                <span class="hud-label">Score</span>
                 <span id="score-val" class="hud-val">0</span>
             </div>
-            <div class="hud-group toggle-container active" id="mode-toggle" onclick="toggleMode()">
-                <span class="hud-item" id="mode-label">Capital</span>
-                <div class="toggle-switch">
-                    <div class="toggle-knob"></div>
-                </div>
+            <div class="hud-item" onclick="toggleMode()">
+                <span class="hud-label">Mode</span>
+                <button id="mode-btn" class="toggle-btn active">Capital</button>
             </div>
         </div>
         <div id="prompt-container">
-            <p id="find-label">Initializing...</p>
-            <h1 id="main-prompt">Global Calibration...</h1>
+            <h1 id="main-prompt">Loading World Data...</h1>
             <div id="sub-prompt"></div>
         </div>
     </div>
 
     <div id="fact-overlay">
         <div class="fact-card">
-            <div class="fact-status" id="fact-status">Result</div>
-            <div class="fact-city" id="fact-city-name">City</div>
-            <div class="fact-body" id="fact-text">Fact</div>
-            <button class="next-btn" id="next-action-btn">Continue</button>
+            <h2 class="fact-title" id="fact-city">City</h2>
+            <p class="fact-text" id="fact-desc">Description</p>
+            <button class="next-btn" onclick="nextRound()">Next Country</button>
         </div>
     </div>
 
     <script>
-        let svg, g, zoom, projection, path;
-        let width, height;
-        let currentTargetISO = "";
-        let currentPhase = "MAP_SELECTION"; 
+        let map, geoJsonLayer;
+        let currentTargetISO = null;
+        let currentPhase = "MAP"; // MAP or CITY
         let score = 0;
         let visited = new Set();
-        let currentScale = 1;
         let isCapitalMode = true;
+        let cityMarkers = [];
         let targetCityName = "";
 
-        // ---- NUMERIC ID BRIDGE ----
-        // This maps the 'world-atlas' numeric IDs to your Alpha-3 keys
-        const idMap = {
-            "840": "USA", "124": "CAN", "484": "MEX", "250": "FRA", "276": "DEU",
-            "826": "GBR", "392": "JPN", "156": "CHN", "076": "BRA", "032": "ARG",
-            "818": "EGY", "710": "ZAF", "566": "NGA", "036": "AUS", "554": "NZL",
-            "356": "IND", "643": "RUS", "380": "ITA", "724": "ESP", "792": "TUR",
-            "410": "KOR", "408": "PRK", "728": "SSD", "104": "MMR", "364": "IRN",
-            "760": "SYR", "704": "VNM", "418": "LAO", "682": "SAU", "360": "IDN",
-            "170": "COL", "862": "VEN", "604": "PER", "152": "CHL", "068": "BOL",
-            "218": "ECU", "600": "PRY", "858": "URY", "328": "GUY", "740": "SUR",
-            "591": "PAN", "320": "GTM", "188": "CRI", "340": "HND", "558": "NIC",
-            "222": "SLV", "084": "BLZ", "192": "CUB", "214": "DOM", "332": "HTI",
-            "388": "JAM", "044": "BHS", "780": "TTO", "052": "BRB", "662": "LCA",
-            "028": "ATG", "308": "GRD", "670": "VCT", "659": "KNA", "212": "DMA",
-            "578": "NOR", "752": "SWE", "246": "FIN", "208": "DNK", "352": "ISL",
-            "372": "IRL", "528": "NLD", "056": "BEL", "442": "LUX", "756": "CHE",
-            "040": "AUT", "620": "PRT", "300": "GRC", "348": "HUN", "616": "POL",
-            "203": "CZE", "703": "SVK", "705": "SVN", "191": "HRV", "070": "BIH",
-            "499": "MNE", "688": "SRB", "807": "MKD", "008": "ALB", "100": "BGR",
-            "642": "ROU", "498": "MDA", "112": "BLR", "804": "UKR", "233": "EST",
-            "428": "LVA", "440": "LTU", "268": "GEO", "031": "AZE", "051": "ARM",
-            "398": "KAZ", "417": "KGZ", "762": "TJK", "795": "TKM", "860": "UZB",
-            "496": "MNG", "050": "BGD", "524": "NPL", "064": "BTN", "144": "LKA",
-            "462": "MDV", "586": "PAK", "004": "AFG", "368": "IRQ", "376": "ISR",
-            "422": "LBN", "400": "JOR", "682": "SAU", "784": "ARE", "634": "QAT",
-            "048": "BHR", "414": "KWT", "512": "OMN", "887": "YEM", "764": "THA",
-            "458": "MYS", "702": "SGP", "608": "PHL", "116": "KHM", "626": "TLS",
-            "096": "BRN", "242": "FJI", "598": "PNG", "090": "SLB", "548": "VUT",
-            "882": "WSM", "776": "TON", "296": "KIR", "798": "TUV", "584": "MHL",
-            "583": "FSM", "585": "PLW", "520": "NRU", "012": "DZA", "504": "MAR",
-            "788": "TUN", "434": "LBY", "818": "EGY", "729": "SDN", "232": "ERI",
-            "231": "ETH", "262": "DJI", "706": "SOM", "404": "KEN", "800": "UGA",
-            "646": "RWA", "108": "BDI", "834": "TZA", "450": "MDG", "454": "MWI",
-            "508": "MOZ", "894": "ZMB", "716": "ZWE", "072": "BWA", "516": "NAM",
-            "426": "LSO", "748": "SWZ", "024": "AGO", "178": "COG", "180": "COD",
-            "140": "CAF", "148": "TCD", "120": "CMR", "226": "GNQ", "266": "GAB",
-            "678": "STP", "562": "NER", "204": "BEN", "768": "TGO", "288": "GHA",
-            "384": "CIV", "430": "LBR", "694": "SLE", "324": "GIN", "624": "GNB",
-            "270": "GMB", "686": "SEN", "478": "MRT", "466": "MLI", "854": "BFA"
+        // Continent Colors
+        const regionColors = {
+            "north_america": "#4facfe",
+            "south_america": "#ff5e62",
+            "europe": "#43e97b",
+            "africa": "#fa709a", // Orange-Pink
+            "asia": "#f09819",
+            "oceania": "#a18cd1"
         };
 
-        // Name-based fallback for any missing numeric codes
-        const mapToDataName = {
-            "United States of America": "United States",
-            "Bahamas": "Bahamas", "The Bahamas": "Bahamas",
-            "Dominican Republic": "Dominican Rep.",
-            "Bolivia (Plurinational State of)": "Bolivia",
-            "Venezuela (Bolivarian Republic of)": "Venezuela",
-            "Czech Republic": "Czechia",
-            "Bosnia and Herzegovina": "Bosnia and Herz.",
-            "The former Yugoslav Republic of Macedonia": "North Macedonia", "Macedonia": "North Macedonia",
-            "Republic of Moldova": "Moldova",
-            "Russian Federation": "Russia",
-            "Democratic Republic of the Congo": "Dem. Rep. Congo",
-            "Congo": "Congo", "Republic of the Congo": "Congo",
-            "United Republic of Tanzania": "Tanzania",
-            "Central African Republic": "Central African Rep.",
-            "South Sudan": "S. Sudan",
-            "Ivory Coast": "Côte d'Ivoire", "CÃ´te d'Ivoire": "Côte d'Ivoire",
-            "Swaziland": "Eswatini", "eSwatini": "Eswatini",
-            "Gambia": "Gambia", "The Gambia": "Gambia",
-            "Equatorial Guinea": "Equatorial Guinea",
-            "Dem. Rep. Korea": "North Korea", "Democratic People's Republic of Korea": "North Korea",
-            "Republic of Korea": "South Korea",
-            "Viet Nam": "Vietnam",
-            "Lao PDR": "Laos",
-            "Syrian Arab Republic": "Syria",
-            "Iran (Islamic Republic of)": "Iran",
-            "Brunei Darussalam": "Brunei",
-            "East Timor": "Timor-Leste", "Timor-Leste": "Timor-Leste",
-            "Taiwan": "Taiwan",
-            "Myanmar": "Myanmar",
-            "Kyrgyzstan": "Kyrgyzstan", "Kyrgyz Republic": "Kyrgyzstan"
-        };
+        window.onload = initMap;
 
-        window.onload = initGame;
-
-        async function initGame() {
-            width = window.innerWidth;
-            height = window.innerHeight;
-            const container = d3.select("#map-stage");
-            svg = container.append("svg").attr("viewBox", `0 0 ${width} ${height}`).attr("preserveAspectRatio", "xMidYMid meet");
-            g = svg.append("g");
-            
-            // ZOOM logic: Keeps dots TINY relative to the screen
-            zoom = d3.zoom().scaleExtent([1, 80]).on("zoom", (e) => {
-                g.attr("transform", e.transform);
-                currentScale = e.transform.k;
-                d3.selectAll(".city-node")
-                  .attr("r", 2.0 / currentScale) // Massively shrunk
-                  .attr("stroke-width", (0.2 / currentScale)); // Hairline stroke
+        async function initMap() {
+            // 1. Initialize Leaflet
+            map = L.map('map', {
+                center: [20, 0],
+                zoom: 2,
+                zoomControl: false,
+                attributionControl: false,
+                minZoom: 2,
+                maxZoom: 10,
+                maxBounds: [[-90, -180], [90, 180]]
             });
-            svg.call(zoom);
 
-            try {
-                // RELIABLE CDN SOURCE
-                const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
-                // Remove Antarctica (ID 010)
-                const countries = topojson.feature(world, world.objects.countries).features.filter(d => d.id !== "010");
-                
-                projection = d3.geoMercator().fitSize([width, height * 0.85], {type: "FeatureCollection", features: countries});
-                path = d3.geoPath().projection(projection);
+            // 2. Load Robust GeoJSON (matches ISO Codes like "USA", "FRA")
+            const response = await fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json');
+            const data = await response.json();
 
-                // MATCHING LOGIC
-                const findDataForMapEntry = (d) => {
-                    // 1. Try ISO Alpha-3 Map
-                    if (gameData[idMap[d.id]]) return gameData[idMap[d.id]];
-                    // 2. Try Numeric ID direct (if gameData used numerics, but it uses Alpha-3)
-                    if (gameData[d.id]) return gameData[d.id];
-                    // 3. Try Name Fallback
-                    const name = d.properties.name;
-                    const normalized = mapToDataName[name] || name;
-                    return Object.entries(gameData).find(([iso, data]) => data.name === normalized)?.[1];
+            // 3. Style and Logic Layer
+            geoJsonLayer = L.geoJson(data, {
+                style: styleFeature,
+                onEachFeature: onEachFeature
+            }).addTo(map);
+
+            startGame();
+        }
+
+        function styleFeature(feature) {
+            // THE FIX: Direct ISO Lookup. No name matching.
+            const iso = feature.id; 
+            const entry = gameData[iso];
+            
+            // If country exists in your .js file, color it. If not, make it dark grey.
+            if (entry) {
+                return {
+                    fillColor: regionColors[entry.region],
+                    weight: 1, // Visible border
+                    opacity: 1,
+                    color: 'rgba(255,255,255,0.3)', // Border color
+                    fillOpacity: 0.4
                 };
-
-                g.selectAll("path")
-                    .data(countries)
-                    .enter().append("path")
-                    .attr("d", path)
-                    .attr("class", d => {
-                        const entry = findDataForMapEntry(d);
-                        const region = entry ? entry.region : "unknown";
-                        return `country reg-${region}`;
-                    })
-                    .attr("id", d => {
-                        const entry = findDataForMapEntry(d);
-                        // If we found an entry, use the ISO code from our data. If not, use map ID.
-                        const iso = entry ? Object.keys(gameData).find(key => gameData[key] === entry) : d.id;
-                        return `country-${iso}`;
-                    })
-                    .on("click", function(event, d) {
-                        handleCountryClick.call(this, event, d);
-                    });
-
-                startRound();
-            } catch (err) { console.error("Map Data Error:", err); }
+            } else {
+                return {
+                    fillColor: "#1a1a1a",
+                    weight: 0.5,
+                    color: '#333',
+                    fillOpacity: 1
+                };
+            }
         }
 
-        function toggleMode() {
-            if (currentPhase === "CITY_SELECTION") return;
-            isCapitalMode = !isCapitalMode;
-            const container = document.getElementById('mode-toggle');
-            const label = document.getElementById('mode-label');
-            if (isCapitalMode) { container.classList.add('active'); label.innerText = 'Capital'; }
-            else { container.classList.remove('active'); label.innerText = 'Fact'; }
+        function onEachFeature(feature, layer) {
+            layer.on({
+                mouseover: (e) => {
+                    const layer = e.target;
+                    // Only highlight if it's a playable country
+                    if(gameData[feature.id]) {
+                        layer.setStyle({
+                            weight: 2,
+                            color: '#fff',
+                            fillOpacity: 0.7
+                        });
+                        layer.bringToFront();
+                    }
+                },
+                mouseout: (e) => {
+                    geoJsonLayer.resetStyle(e.target);
+                },
+                click: (e) => handleCountryClick(feature.id, layer)
+            });
         }
 
-        function startRound() {
+        function startGame() {
             const keys = Object.keys(gameData);
             const available = keys.filter(k => !visited.has(k));
-            if (available.length === 0) { alert("World Tour Complete!"); visited.clear(); score = 0; startRound(); return; }
+
+            if (available.length === 0) {
+                alert("Game Over! Score: " + score);
+                visited.clear();
+                score = 0;
+            }
 
             currentTargetISO = available[Math.floor(Math.random() * available.length)];
             visited.add(currentTargetISO);
-            currentPhase = "MAP_SELECTION";
-            resetZoom();
-            d3.selectAll(".country").classed("active-focused", false);
-            d3.selectAll(".city-node").remove();
-            document.getElementById("fact-overlay").classList.remove("show");
-            document.getElementById("find-label").innerText = "Find Country";
-            document.getElementById("main-prompt").innerText = gameData[currentTargetISO].name;
-            document.getElementById("target-state").innerText = currentTargetISO;
-            document.getElementById("sub-prompt").innerText = "";
-            updateScoreUI();
+            currentPhase = "MAP";
+            
+            // Reset View
+            map.setView([20, 0], 2);
+            clearCities();
+            document.getElementById('fact-overlay').classList.remove('show');
+            
+            // UI Update
+            document.getElementById('main-prompt').innerText = gameData[currentTargetISO].name;
+            document.getElementById('sub-prompt').innerText = "Find this country";
+            document.getElementById('score-val').innerText = score;
         }
 
-        function handleCountryClick(event, d) {
-            if (currentPhase !== "MAP_SELECTION") return;
-            const clickedId = this.id;
-            const clickedISO = clickedId ? clickedId.replace("country-", "") : null;
+        function handleCountryClick(iso, layer) {
+            if (currentPhase !== "MAP") return;
 
-            if (clickedISO === currentTargetISO) {
-                score += 10; updateScoreUI();
-                flashState(this, "correct");
-                transitionToCityPhase(d, clickedISO);
+            if (iso === currentTargetISO) {
+                score += 10;
+                flashMessage("Correct!", "#00ff9d");
+                transitionToCity(iso, layer);
             } else {
-                score -= 10; updateScoreUI();
-                flashState(this, "wrong");
-                const mapName = d.properties.name;
-                const wrongName = mapToDataName[mapName] || mapName || "Unknown territory";
-                document.getElementById("find-label").innerText = "Find";
-                document.getElementById("main-prompt").innerText = gameData[currentTargetISO].name;
-                document.getElementById("sub-prompt").innerHTML = `That is <span class="wrong-state-highlight">${wrongName}</span>`;
+                score -= 5;
+                const clickedName = gameData[iso] ? gameData[iso].name : "Unknown";
+                flashMessage(`Wrong! That is ${clickedName}`, "#ff0055");
             }
+            document.getElementById('score-val').innerText = score;
         }
 
-        function transitionToCityPhase(geoData, iso) {
-            currentPhase = "CITY_SELECTION";
-            zoomToCountry(geoData);
-            d3.select(`#country-${iso}`).classed("active-focused", true);
+        function transitionToCity(iso, layer) {
+            currentPhase = "CITY";
             const data = gameData[iso];
-            document.getElementById("find-label").innerText = "Find";
+            
+            // Zoom to country
+            map.fitBounds(layer.getBounds(), { padding: [50, 50], maxZoom: 6 });
+
+            // Setup Question
             if (isCapitalMode) {
                 targetCityName = data.capital;
-                document.getElementById("main-prompt").innerText = `The capital of ${data.name}`;
+                document.getElementById('main-prompt').innerText = `Find Capital: ${data.capital}`;
+                document.getElementById('sub-prompt').innerText = data.name;
             } else {
-                const cityNames = Object.keys(data.cities);
-                targetCityName = cityNames[Math.floor(Math.random() * cityNames.length)];
-                document.getElementById("main-prompt").innerText = data.facts[targetCityName];
+                // Fact mode
+                const cities = Object.keys(data.cities);
+                targetCityName = cities[Math.floor(Math.random() * cities.length)];
+                document.getElementById('main-prompt').innerText = "Find the city matching this fact:";
+                document.getElementById('sub-prompt').innerText = `"${data.facts[targetCityName]}"`;
             }
-            plotCities(iso);
-            setTimeout(() => { d3.selectAll(".city-node").style("pointer-events", "auto"); }, 1200);
+
+            // Plot Cities
+            Object.entries(data.cities).forEach(([city, coords]) => {
+                // GeoJSON is Lon/Lat, Leaflet is Lat/Lon
+                const latLng = [coords[1], coords[0]]; 
+                
+                const marker = L.circleMarker(latLng, {
+                    radius: 5, // Small base radius
+                    fillColor: "#00f3ff",
+                    color: "#fff",
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8,
+                    className: 'city-marker' // Custom CSS class for hover
+                }).addTo(map);
+
+                marker.on('click', () => handleCityClick(city, iso));
+                marker.bindTooltip(city, { permanent: false, direction: 'top' });
+                cityMarkers.push(marker);
+            });
         }
 
-        function plotCities(iso) {
+        function handleCityClick(city, iso) {
             const data = gameData[iso];
-            const nodes = Object.entries(data.cities).map(([name, coords]) => {
-                const projected = projection(coords);
-                return projected ? { name, x: projected[0], y: projected[1] } : null;
-            }).filter(n => n);
-            g.selectAll(".city-node").data(nodes).enter().append("circle")
-                .attr("class", "city-node").attr("cx", d => d.x).attr("cy", d => d.y).attr("r", 0)
-                .on("mouseover", showTooltip).on("mousemove", moveTooltip).on("mouseout", hideTooltip)
-                .on("click", (e, d) => handleCityClick(e, d, iso))
-                .transition().duration(500).delay(800).attr("r", 2.0 / currentScale); // Consistent tiny size
-        }
-
-        function handleCityClick(event, cityNode, iso) {
-            const isCorrect = cityNode.name === targetCityName;
-            const dot = d3.select(event.currentTarget);
-            if (isCorrect) {
-                dot.classed("correct-choice", true);
-                score += 10; updateScoreUI();
-                showFact(cityNode.name, iso, "CORRECT", "status-correct");
+            if (city === targetCityName) {
+                score += 20;
+                showFactOverlay(city, data.facts[city], true);
             } else {
-                dot.classed("wrong-choice", true);
-                score -= 10; updateScoreUI();
-                showFact(cityNode.name, iso, "INCORRECT", "status-wrong");
+                score -= 10;
+                flashMessage("Wrong city!", "#ff0055");
             }
+            document.getElementById('score-val').innerText = score;
         }
 
-        function showFact(cityName, iso, status, statusClass) {
-            const data = gameData[iso];
-            const overlay = document.getElementById("fact-overlay");
-            const btn = document.getElementById("next-action-btn");
-            document.getElementById("fact-status").innerText = status;
-            document.getElementById("fact-status").className = `fact-status ${statusClass}`;
-            document.getElementById("fact-city-name").innerText = cityName;
-            document.getElementById("fact-text").innerHTML = data.facts[cityName];
-            btn.innerText = (status === "CORRECT") ? "Next Country" : "Keep Searching";
-            btn.onclick = (status === "CORRECT") ? resetGameRound : () => overlay.classList.remove("show");
-            overlay.classList.add("show");
+        function showFactOverlay(city, fact, isCorrect) {
+            document.getElementById('fact-city').innerText = city;
+            document.getElementById('fact-desc').innerText = fact;
+            document.getElementById('fact-overlay').classList.add('show');
         }
 
-        function updateScoreUI() { document.getElementById("score-val").innerText = score; }
-        function showTooltip(e, d) { const tt = document.getElementById("city-tooltip"); tt.innerText = d.name; tt.style.opacity = 1; }
-        function moveTooltip(e) { const tt = document.getElementById("city-tooltip"); tt.style.left = e.pageX + "px"; tt.style.top = e.pageY + "px"; }
-        function hideTooltip() { document.getElementById("city-tooltip").style.opacity = 0; }
-        function resetGameRound() { startRound(); }
-
-        function zoomToCountry(d) {
-            const b = path.bounds(d);
-            const s = Math.max(1, Math.min(60, 0.7 / Math.max((b[1][0] - b[0][0]) / width, (b[1][1] - b[0][1]) / height)));
-            const t = [width / 2 - s * (b[0][0] + b[1][0]) / 2, height / 2 - s * (b[0][1] + b[1][1]) / 2];
-            svg.transition().duration(1200).call(zoom.transform, d3.zoomIdentity.translate(t[0], t[1]).scale(s));
+        function nextRound() {
+            startGame();
         }
 
-        function resetZoom() { svg.transition().duration(1000).call(zoom.transform, d3.zoomIdentity); }
-        function flashState(el, type) { d3.select(el).classed(type+"-flash", true); setTimeout(() => d3.select(el).classed(type+"-flash", false), 600); }
+        function clearCities() {
+            cityMarkers.forEach(m => map.removeLayer(m));
+            cityMarkers = [];
+        }
+
+        function toggleMode() {
+            if (currentPhase !== "MAP") return;
+            isCapitalMode = !isCapitalMode;
+            const btn = document.getElementById('mode-btn');
+            btn.innerText = isCapitalMode ? "Capital" : "Fact";
+            btn.classList.toggle('active');
+        }
+
+        function flashMessage(text, color) {
+            const sub = document.getElementById('sub-prompt');
+            const original = sub.innerText;
+            sub.innerText = text;
+            sub.style.color = color;
+            setTimeout(() => {
+                sub.innerText = original;
+                sub.style.color = "#00f3ff";
+            }, 1500);
+        }
     </script>
 </body>
 </html>
