@@ -3,21 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Maps Quiz | ISO Standard</title>
-    
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <title>Maps Quiz | AmCharts Engine</title>
     
     <style>
         body { margin: 0; padding: 0; background-color: #050505; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
         
-        #map { width: 100vw; height: 100vh; background: #050505; }
+        #chartdiv { width: 100%; height: 100vh; }
 
-        /* UI Overlay */
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; }
+        /* UI OVERLAY */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         
         #top-hud {
             position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(15, 15, 15, 0.9); border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(15, 15, 15, 0.95); border: 1px solid rgba(255,255,255,0.2);
             padding: 10px 40px; border-radius: 50px; display: flex; gap: 50px;
             backdrop-filter: blur(10px); pointer-events: auto;
         }
@@ -33,7 +31,7 @@
         #main-prompt { font-size: 2.5rem; color: white; font-weight: 900; margin: 0; }
         #sub-prompt { font-size: 1.2rem; color: #00f3ff; margin-top: 10px; font-weight: 600; }
 
-        /* Mode Toggle */
+        /* MODE TOGGLE */
         .toggle-btn {
             background: #333; border: 1px solid #555; color: white;
             padding: 5px 15px; border-radius: 20px; cursor: pointer;
@@ -41,11 +39,11 @@
         }
         .toggle-btn.active { background: #00f3ff; color: black; border-color: #00f3ff; font-weight: bold; }
 
-        /* Fact Card */
+        /* FACT CARD */
         #fact-overlay {
             position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
             display: flex; justify-content: center; align-items: center; 
-            opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 2000;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 100;
         }
         #fact-overlay.show { opacity: 1; pointer-events: auto; }
         
@@ -60,21 +58,6 @@
             font-size: 1rem; font-weight: bold; border-radius: 30px; cursor: pointer;
         }
         .next-btn:hover { transform: scale(1.05); background: white; }
-
-        /* City Marker Styles */
-        .city-marker {
-            /* No default border to keep it tiny */
-            stroke: none;
-            transition: all 0.2s;
-            cursor: pointer; 
-        }
-        /* Only add a halo on hover to indicate interactability */
-        .city-marker:hover {
-            stroke: white;
-            stroke-width: 2px;
-            fill: #00f3ff;
-            fill-opacity: 1;
-        }
     </style>
 
     <script>const gameData = {};</script>
@@ -84,12 +67,14 @@
     <script src="africa.js"></script>
     <script src="asia.js"></script>
     <script src="oceania.js"></script>
-    
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/map.js"></script>
+    <script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js"></script>
 </head>
 <body>
 
-    <div id="map"></div>
+    <div id="chartdiv"></div>
 
     <div id="ui-layer">
         <div id="top-hud">
@@ -103,7 +88,7 @@
             </div>
         </div>
         <div id="prompt-container">
-            <h1 id="main-prompt">Initializing...</h1>
+            <h1 id="main-prompt">System Initializing...</h1>
             <div id="sub-prompt"></div>
         </div>
     </div>
@@ -117,116 +102,125 @@
     </div>
 
     <script>
-        let map, geoJsonLayer;
+        // --- 1. THE BULLETPROOF ISO BRIDGE ---
+        // Maps your 3-letter codes (data) to AmCharts 2-letter codes (map)
+        const iso3to2 = {
+            "AFG":"AF","AGO":"AO","ALB":"AL","ARE":"AE","ARG":"AR","ARM":"AM","ATA":"AQ","ATG":"AG","AUS":"AU","AUT":"AT","AZE":"AZ","BDI":"BI","BEL":"BE","BEN":"BJ","BFA":"BF","BGD":"BD","BGR":"BG","BHR":"BH","BHS":"BS","BIH":"BA","BLR":"BY","BLZ":"BZ","BOL":"BO","BRA":"BR","BRB":"BB","BRN":"BN","BTN":"BT","BWA":"BW","CAF":"CF","CAN":"CA","CHE":"CH","CHL":"CL","CHN":"CN","CIV":"CI","CMR":"CM","COD":"CD","COG":"CG","COL":"CO","COM":"KM","CPV":"CV","CRI":"CR","CUB":"CU","CYP":"CY","CZE":"CZ","DEU":"DE","DJI":"DJ","DMA":"DM","DNK":"DK","DOM":"DO","DZA":"DZ","ECU":"EC","EGY":"EG","ERI":"ER","ESP":"ES","EST":"EE","ETH":"ET","FIN":"FI","FJI":"FJ","FRA":"FR","FSM":"FM","GAB":"GA","GBR":"GB","GEO":"GE","GHA":"GH","GIN":"GN","GMB":"GM","GNB":"GW","GNQ":"GQ","GRC":"GR","GRD":"GD","GTM":"GT","GUY":"GY","HND":"HN","HRV":"HR","HTI":"HT","HUN":"HU","IDN":"ID","IND":"IN","IRL":"IE","IRN":"IR","IRQ":"IQ","ISL":"IS","ISR":"IL","ITA":"IT","JAM":"JM","JOR":"JO","JPN":"JP","KAZ":"KZ","KEN":"KE","KGZ":"KG","KHM":"KH","KIR":"KI","KNA":"KN","KOR":"KR","KWT":"KW","LAO":"LA","LBN":"LB","LBR":"LR","LBY":"LY","LCA":"LC","LIE":"LI","LKA":"LK","LSO":"LS","LTU":"LT","LUX":"LU","LVA":"LV","MAR":"MA","MCO":"MC","MDA":"MD","MDG":"MG","MDV":"MV","MEX":"MX","MHL":"MH","MKD":"MK","MLI":"ML","MLT":"MT","MMR":"MM","MNE":"ME","MNG":"MN","MOZ":"MZ","MRT":"MR","MUS":"MU","MWI":"MW","MYS":"MY","NAM":"NA","NER":"NE","NGA":"NG","NIC":"NI","NLD":"NL","NOR":"NO","NPL":"NP","NRU":"NR","NZL":"NZ","OMN":"OM","PAK":"PK","PAN":"PA","PER":"PE","PHL":"PH","PLW":"PW","PNG":"PG","POL":"PL","PRK":"KP","PRT":"PT","PRY":"PY","PSE":"PS","QAT":"QA","ROU":"RO","RUS":"RU","RWA":"RW","SAU":"SA","SDN":"SD","SEN":"SN","SGP":"SG","SLB":"SB","SLE":"SL","SLV":"SV","SMR":"SM","SOM":"SO","SRB":"RS","SSD":"SS","STP":"ST","SUR":"SR","SVK":"SK","SVN":"SI","SWE":"SE","SWZ":"SZ","SYC":"SC","SYR":"SY","TCD":"TD","TGO":"TG","THA":"TH","TJK":"TJ","TKM":"TM","TLS":"TL","TON":"TO","TTO":"TT","TUN":"TN","TUR":"TR","TUV":"TV","TWN":"TW","TZA":"TZ","UGA":"UG","UKR":"UA","URY":"UY","USA":"US","UZB":"UZ","VAT":"VA","VCT":"VC","VEN":"VE","VNM":"VN","VUT":"VU","WSM":"WS","YEM":"YE","ZAF":"ZA","ZMB":"ZM","ZWE":"ZW"
+        };
+
+        // Region Colors
+        const regionColors = {
+            "north_america": 0x4facfe,
+            "south_america": 0xff5e62,
+            "europe": 0x43e97b,
+            "africa": 0xfa709a, 
+            "asia": 0xf09819, 
+            "oceania": 0xa18cd1
+        };
+
+        let root, chart, polygonSeries, pointSeries;
         let currentTargetISO = null;
-        let currentPhase = "MAP"; // MAP or CITY
+        let currentPhase = "MAP"; 
         let score = 0;
         let visited = new Set();
         let isCapitalMode = true;
-        let cityMarkers = [];
         let targetCityName = "";
 
-        // Region Colors (Matches your previous request)
-        const regionColors = {
-            "north_america": "#4facfe", // Blue
-            "south_america": "#ff5e62", // Red
-            "europe": "#43e97b",        // Green
-            "africa": "#fa709a",        // Orange/Pink tone
-            "asia": "#f09819",          // Orange/Brown
-            "oceania": "#a18cd1"        // Purple
-        };
+        am5.ready(function() {
+            // 1. Create Root
+            root = am5.Root.new("chartdiv");
+            
+            // 2. Set Theme (Dark Mode)
+            root.setThemes([ am5.Theme.new(root) ]);
 
-        window.onload = initMap;
+            // 3. Create Chart
+            chart = root.container.children.push(am5map.MapChart.new(root, {
+                panX: "rotateX",
+                panY: "none", // Lock vertical panning to avoid getting lost
+                projection: am5map.geoMercator(),
+                layout: root.horizontalLayout,
+                minZoomLevel: 1,
+                maxZoomLevel: 64 // Deep zoom allowed
+            }));
 
-        async function initMap() {
-            // 1. Initialize Leaflet with dark background
-            map = L.map('map', {
-                center: [20, 0],
-                zoom: 2,
-                zoomControl: false,
-                attributionControl: false,
-                minZoom: 2,
-                maxZoom: 10,
-                maxBounds: [[-90, -180], [90, 180]]
+            // 4. Create Polygon Series (Countries)
+            polygonSeries = chart.series.push(am5map.MapPolygonSeries.new(root, {
+                geoJSON: am5geodata_worldLow,
+                exclude: ["AQ"] // Exclude Antarctica
+            }));
+
+            // 5. Configure Countries
+            polygonSeries.mapPolygons.template.setAll({
+                tooltipText: "{name}",
+                toggleKey: "active",
+                interactive: true,
+                fill: am5.color(0x222222), // Default Dark Grey
+                stroke: am5.color(0xffffff),
+                strokeWidth: 1, // Visible borders
+                strokeOpacity: 0.15
             });
 
-            // 2. Load "Natural Earth" GeoJSON 
-            // This source specifically uses ISO Alpha-3 codes (ADM0_A3) which matches your data files (GHA, BRA, etc.)
-            const response = await fetch('https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson');
-            const data = await response.json();
+            // 6. Interactive States
+            polygonSeries.mapPolygons.template.states.create("hover", {
+                stroke: am5.color(0xffffff),
+                strokeOpacity: 1,
+                strokeWidth: 2
+            });
 
-            // 3. Style and Logic Layer
-            geoJsonLayer = L.geoJson(data, {
-                style: styleFeature,
-                onEachFeature: onEachFeature
-            }).addTo(map);
+            polygonSeries.mapPolygons.template.events.on("click", function(ev) {
+                handleCountryClick(ev.target);
+            });
 
-            startGame();
-        }
-
-        function styleFeature(feature) {
-            // FIX: Use ADM0_A3 (ISO 3-letter code) to link Map -> GameData
-            // This guarantees that "GHA" in map matches "GHA" in your africa.js
-            let iso = feature.properties.ADM0_A3;
-            
-            // Edge case fixes for Natural Earth inconsistencies
-            if(iso === "SDS") iso = "SSD"; // South Sudan fix
-            
-            const entry = gameData[iso];
-            
-            if (entry) {
-                return {
-                    fillColor: regionColors[entry.region],
-                    weight: 1, 
-                    opacity: 1,
-                    color: 'rgba(255,255,255,0.2)', // Border color
-                    fillOpacity: 0.4
-                };
-            } else {
-                // Country not in your .js files = Dark Grey
-                return {
-                    fillColor: "#1a1a1a",
-                    weight: 0.5,
-                    color: '#333',
-                    fillOpacity: 1
-                };
-            }
-        }
-
-        function onEachFeature(feature, layer) {
-            layer.on({
-                mouseover: (e) => {
-                    const layer = e.target;
-                    let iso = feature.properties.ADM0_A3;
-                    if(iso === "SDS") iso = "SSD";
-
-                    // Only highlight if it's a playable country
-                    if(gameData[iso]) {
-                        layer.setStyle({
-                            weight: 2,
-                            color: '#fff',
-                            fillOpacity: 0.7
-                        });
-                        layer.bringToFront();
-                    }
-                },
-                mouseout: (e) => {
-                    geoJsonLayer.resetStyle(e.target);
-                },
-                click: (e) => {
-                    let iso = feature.properties.ADM0_A3;
-                    if(iso === "SDS") iso = "SSD";
-                    handleCountryClick(iso, layer);
+            // 7. Inject Data Colors using the ISO Bridge
+            let mapData = [];
+            Object.entries(gameData).forEach(([iso3, data]) => {
+                const iso2 = iso3to2[iso3];
+                if (iso2) {
+                    mapData.push({
+                        id: iso2,
+                        fill: am5.color(regionColors[data.region]), // Assign Region Color
+                        originalISO: iso3 // Store orig ISO for logic
+                    });
                 }
             });
-        }
+            
+            // This forces the colors to update
+            polygonSeries.data.setAll(mapData);
+            
+            // Apply the custom fill from data context
+            polygonSeries.mapPolygons.template.adapters.add("fill", function(fill, target) {
+                if (target.dataItem.dataContext && target.dataItem.dataContext.fill) {
+                    return target.dataItem.dataContext.fill;
+                }
+                return fill;
+            });
+
+            // 8. Create Point Series (Cities)
+            pointSeries = chart.series.push(am5map.MapPointSeries.new(root, {}));
+            
+            pointSeries.bullets.push(function() {
+                return am5.Bullet.new(root, {
+                    sprite: am5.Circle.new(root, {
+                        radius: 4, // FIXED PIXEL SIZE - Won't grow on zoom
+                        fill: am5.color(0x00f3ff),
+                        stroke: am5.color(0xffffff),
+                        strokeWidth: 1,
+                        tooltipText: "{title}",
+                        cursorOverStyle: "pointer"
+                    })
+                });
+            });
+
+            // Start Game
+            startGame();
+        });
 
         function startGame() {
             const keys = Object.keys(gameData);
             const available = keys.filter(k => !visited.has(k));
 
             if (available.length === 0) {
-                alert("Game Over! Score: " + score);
+                alert("Tour Complete! Score: " + score);
                 visited.clear();
                 score = 0;
             }
@@ -235,37 +229,42 @@
             visited.add(currentTargetISO);
             currentPhase = "MAP";
             
-            map.setView([20, 0], 2);
-            clearCities();
+            chart.goHome(); // Reset zoom
+            pointSeries.data.setAll([]); // Clear cities
             document.getElementById('fact-overlay').classList.remove('show');
             
+            // UI
             document.getElementById('main-prompt').innerText = gameData[currentTargetISO].name;
             document.getElementById('sub-prompt').innerText = "Find this country";
             document.getElementById('score-val').innerText = score;
         }
 
-        function handleCountryClick(iso, layer) {
+        function handleCountryClick(target) {
             if (currentPhase !== "MAP") return;
 
-            if (iso === currentTargetISO) {
+            // Get the ISO3 code we stored in the data context
+            const clickedISO3 = target.dataItem.dataContext.originalISO;
+
+            if (clickedISO3 === currentTargetISO) {
                 score += 10;
                 flashMessage("Correct!", "#00ff9d");
-                transitionToCity(iso, layer);
+                transitionToCity(target, clickedISO3);
             } else {
                 score -= 5;
-                const clickedName = gameData[iso] ? gameData[iso].name : "Unknown Area";
-                flashMessage(`Wrong! That is ${clickedName}`, "#ff0055");
+                const clickedName = target.dataItem.dataContext.name || "Unknown";
+                flashMessage(`Wrong!`, "#ff0055");
             }
             document.getElementById('score-val').innerText = score;
         }
 
-        function transitionToCity(iso, layer) {
+        function transitionToCity(polygon, iso) {
             currentPhase = "CITY";
             const data = gameData[iso];
             
             // Zoom to country
-            map.fitBounds(layer.getBounds(), { padding: [50, 50], maxZoom: 6 });
+            polygonSeries.zoomToDataItem(polygon.dataItem);
 
+            // Set Prompt
             if (isCapitalMode) {
                 targetCityName = data.capital;
                 document.getElementById('main-prompt').innerText = `Find Capital: ${data.capital}`;
@@ -278,30 +277,36 @@
             }
 
             // Plot Cities
+            let cityData = [];
             Object.entries(data.cities).forEach(([city, coords]) => {
-                // GeoJSON/D3 is [Lon, Lat], Leaflet uses [Lat, Lon]
-                const latLng = [coords[1], coords[0]]; 
-                
-                const marker = L.circleMarker(latLng, {
-                    radius: 4, // Small base radius
-                    fillColor: "#00f3ff",
-                    color: "#00f3ff", // Same as fill to hide border initially
-                    weight: 0, // No border by default
-                    opacity: 1,
-                    fillOpacity: 0.9,
-                    className: 'city-marker',
-                    interactive: true // ENSURES CLICKABILITY
-                }).addTo(map);
+                cityData.push({
+                    geometry: { type: "Point", coordinates: [coords[0], coords[1]] },
+                    title: city,
+                    iso: iso // pass context
+                });
+            });
+            pointSeries.data.setAll(cityData);
 
-                marker.on('click', (e) => {
-                    L.DomEvent.stopPropagation(e); // Stop click from hitting map layer
+            // Add click listener to bullets (needs to be done on the template)
+            // Note: AmCharts handles events slightly differently, we attach to the sprite in the bullet function
+            // Re-defining bullet to add click event:
+            pointSeries.bullets.clear();
+            pointSeries.bullets.push(function() {
+                let circle = am5.Circle.new(root, {
+                    radius: 5, // Small fixed size
+                    fill: am5.color(0x00f3ff),
+                    stroke: am5.color(0xffffff),
+                    strokeWidth: 1,
+                    tooltipText: "{title}",
+                    cursorOverStyle: "pointer"
+                });
+
+                circle.events.on("click", function(ev) {
+                    let city = ev.target.dataItem.dataContext.title;
                     handleCityClick(city, iso);
                 });
-                
-                // IMPORTANT: Bring markers to front so they aren't buried by map layers
-                marker.bringToFront(); 
-                
-                cityMarkers.push(marker);
+
+                return am5.Bullet.new(root, { sprite: circle });
             });
         }
 
@@ -309,15 +314,15 @@
             const data = gameData[iso];
             if (city === targetCityName) {
                 score += 20;
-                showFactOverlay(city, data.facts[city], true);
+                showFactOverlay(city, data.facts[city]);
             } else {
                 score -= 10;
-                flashMessage("Wrong city!", "#ff0055");
+                flashMessage("Wrong City!", "#ff0055");
             }
             document.getElementById('score-val').innerText = score;
         }
 
-        function showFactOverlay(city, fact, isCorrect) {
+        function showFactOverlay(city, fact) {
             document.getElementById('fact-city').innerText = city;
             document.getElementById('fact-desc').innerText = fact;
             document.getElementById('fact-overlay').classList.add('show');
@@ -325,11 +330,6 @@
 
         function nextRound() {
             startGame();
-        }
-
-        function clearCities() {
-            cityMarkers.forEach(m => map.removeLayer(m));
-            cityMarkers = [];
         }
 
         function toggleMode() {
