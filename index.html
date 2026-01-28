@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Maps Quiz | Master Edition</title>
+    <title>Maps Quiz | Final Stable</title>
     
     <link rel="icon" href="icon_0.jpg" type="image/jpeg">
     <link rel="apple-touch-icon" href="icon_0.jpg">
@@ -24,8 +24,7 @@
     <style>
         :root {
             --bg-deep: #050505;
-            /* Increased border visibility (0.15 -> 0.5) */
-            --map-stroke: rgba(255, 255, 255, 0.5); 
+            --map-stroke: rgba(255, 255, 255, 0.3); /* Visible, crisp borders */
             --neon-blue: #00f3ff;
             --neon-pink: #ff0055;
             --neon-green: #00ff9d;
@@ -50,16 +49,16 @@
 
         #map-stage { width: 100%; height: calc(100% - 60px); cursor: crosshair; }
 
-        /* Country Styling - Thicker Borders */
+        /* Country Styling */
         .country { 
             stroke: var(--map-stroke); 
-            stroke-width: 0.6px; /* Visible borders */
+            stroke-width: 0.5px; 
             transition: fill 0.3s, opacity 0.3s; 
-            vector-effect: non-scaling-stroke; /* Keeps borders sharp during zoom */
-            fill: #111; /* Darker base for unmapped areas */
+            vector-effect: non-scaling-stroke; 
+            fill: #1a1a1a; 
         }
         
-        /* Shading Class Logic */
+        /* Region Classes */
         .reg-north_america { fill: var(--c-na); }
         .reg-south_america { fill: var(--c-sa); }
         .reg-europe { fill: var(--c-eu); }
@@ -75,7 +74,7 @@
         @keyframes flashSuccess { 0% { fill: var(--neon-green); } 100% { fill: inherit; } }
         @keyframes flashError { 0% { fill: var(--neon-pink); } 100% { fill: inherit; } }
 
-        /* ---- FIXED: MICROSCOPIC CITY NODES ---- */
+        /* ---- MICROSCOPIC CITY NODES ---- */
         .city-node {
             fill: var(--neon-blue);
             stroke: rgba(0, 243, 255, 0.8); 
@@ -87,7 +86,7 @@
         .city-node:hover {
             fill: #fff;
             stroke: var(--neon-blue);
-            stroke-width: 0.5px; /* Tiny hover halo */
+            stroke-width: 0.5px; /* Micro halo on hover */
         }
         .city-node.wrong-choice { fill: var(--neon-pink); stroke: var(--neon-pink); opacity: 0.8; pointer-events: none; }
         .city-node.correct-choice { fill: var(--neon-green); stroke: var(--neon-green); }
@@ -162,7 +161,7 @@
         </div>
         <div id="prompt-container">
             <p id="find-label">Initializing...</p>
-            <h1 id="main-prompt">Syncing Geodata...</h1>
+            <h1 id="main-prompt">Global Calibration...</h1>
             <div id="sub-prompt"></div>
         </div>
     </div>
@@ -187,6 +186,82 @@
         let isCapitalMode = true;
         let targetCityName = "";
 
+        // ---- NUMERIC ID BRIDGE ----
+        // This maps the 'world-atlas' numeric IDs to your Alpha-3 keys
+        const idMap = {
+            "840": "USA", "124": "CAN", "484": "MEX", "250": "FRA", "276": "DEU",
+            "826": "GBR", "392": "JPN", "156": "CHN", "076": "BRA", "032": "ARG",
+            "818": "EGY", "710": "ZAF", "566": "NGA", "036": "AUS", "554": "NZL",
+            "356": "IND", "643": "RUS", "380": "ITA", "724": "ESP", "792": "TUR",
+            "410": "KOR", "408": "PRK", "728": "SSD", "104": "MMR", "364": "IRN",
+            "760": "SYR", "704": "VNM", "418": "LAO", "682": "SAU", "360": "IDN",
+            "170": "COL", "862": "VEN", "604": "PER", "152": "CHL", "068": "BOL",
+            "218": "ECU", "600": "PRY", "858": "URY", "328": "GUY", "740": "SUR",
+            "591": "PAN", "320": "GTM", "188": "CRI", "340": "HND", "558": "NIC",
+            "222": "SLV", "084": "BLZ", "192": "CUB", "214": "DOM", "332": "HTI",
+            "388": "JAM", "044": "BHS", "780": "TTO", "052": "BRB", "662": "LCA",
+            "028": "ATG", "308": "GRD", "670": "VCT", "659": "KNA", "212": "DMA",
+            "578": "NOR", "752": "SWE", "246": "FIN", "208": "DNK", "352": "ISL",
+            "372": "IRL", "528": "NLD", "056": "BEL", "442": "LUX", "756": "CHE",
+            "040": "AUT", "620": "PRT", "300": "GRC", "348": "HUN", "616": "POL",
+            "203": "CZE", "703": "SVK", "705": "SVN", "191": "HRV", "070": "BIH",
+            "499": "MNE", "688": "SRB", "807": "MKD", "008": "ALB", "100": "BGR",
+            "642": "ROU", "498": "MDA", "112": "BLR", "804": "UKR", "233": "EST",
+            "428": "LVA", "440": "LTU", "268": "GEO", "031": "AZE", "051": "ARM",
+            "398": "KAZ", "417": "KGZ", "762": "TJK", "795": "TKM", "860": "UZB",
+            "496": "MNG", "050": "BGD", "524": "NPL", "064": "BTN", "144": "LKA",
+            "462": "MDV", "586": "PAK", "004": "AFG", "368": "IRQ", "376": "ISR",
+            "422": "LBN", "400": "JOR", "682": "SAU", "784": "ARE", "634": "QAT",
+            "048": "BHR", "414": "KWT", "512": "OMN", "887": "YEM", "764": "THA",
+            "458": "MYS", "702": "SGP", "608": "PHL", "116": "KHM", "626": "TLS",
+            "096": "BRN", "242": "FJI", "598": "PNG", "090": "SLB", "548": "VUT",
+            "882": "WSM", "776": "TON", "296": "KIR", "798": "TUV", "584": "MHL",
+            "583": "FSM", "585": "PLW", "520": "NRU", "012": "DZA", "504": "MAR",
+            "788": "TUN", "434": "LBY", "818": "EGY", "729": "SDN", "232": "ERI",
+            "231": "ETH", "262": "DJI", "706": "SOM", "404": "KEN", "800": "UGA",
+            "646": "RWA", "108": "BDI", "834": "TZA", "450": "MDG", "454": "MWI",
+            "508": "MOZ", "894": "ZMB", "716": "ZWE", "072": "BWA", "516": "NAM",
+            "426": "LSO", "748": "SWZ", "024": "AGO", "178": "COG", "180": "COD",
+            "140": "CAF", "148": "TCD", "120": "CMR", "226": "GNQ", "266": "GAB",
+            "678": "STP", "562": "NER", "204": "BEN", "768": "TGO", "288": "GHA",
+            "384": "CIV", "430": "LBR", "694": "SLE", "324": "GIN", "624": "GNB",
+            "270": "GMB", "686": "SEN", "478": "MRT", "466": "MLI", "854": "BFA"
+        };
+
+        // Name-based fallback for any missing numeric codes
+        const mapToDataName = {
+            "United States of America": "United States",
+            "Bahamas": "Bahamas", "The Bahamas": "Bahamas",
+            "Dominican Republic": "Dominican Rep.",
+            "Bolivia (Plurinational State of)": "Bolivia",
+            "Venezuela (Bolivarian Republic of)": "Venezuela",
+            "Czech Republic": "Czechia",
+            "Bosnia and Herzegovina": "Bosnia and Herz.",
+            "The former Yugoslav Republic of Macedonia": "North Macedonia", "Macedonia": "North Macedonia",
+            "Republic of Moldova": "Moldova",
+            "Russian Federation": "Russia",
+            "Democratic Republic of the Congo": "Dem. Rep. Congo",
+            "Congo": "Congo", "Republic of the Congo": "Congo",
+            "United Republic of Tanzania": "Tanzania",
+            "Central African Republic": "Central African Rep.",
+            "South Sudan": "S. Sudan",
+            "Ivory Coast": "Côte d'Ivoire", "CÃ´te d'Ivoire": "Côte d'Ivoire",
+            "Swaziland": "Eswatini", "eSwatini": "Eswatini",
+            "Gambia": "Gambia", "The Gambia": "Gambia",
+            "Equatorial Guinea": "Equatorial Guinea",
+            "Dem. Rep. Korea": "North Korea", "Democratic People's Republic of Korea": "North Korea",
+            "Republic of Korea": "South Korea",
+            "Viet Nam": "Vietnam",
+            "Lao PDR": "Laos",
+            "Syrian Arab Republic": "Syria",
+            "Iran (Islamic Republic of)": "Iran",
+            "Brunei Darussalam": "Brunei",
+            "East Timor": "Timor-Leste", "Timor-Leste": "Timor-Leste",
+            "Taiwan": "Taiwan",
+            "Myanmar": "Myanmar",
+            "Kyrgyzstan": "Kyrgyzstan", "Kyrgyz Republic": "Kyrgyzstan"
+        };
+
         window.onload = initGame;
 
         async function initGame() {
@@ -196,41 +271,58 @@
             svg = container.append("svg").attr("viewBox", `0 0 ${width} ${height}`).attr("preserveAspectRatio", "xMidYMid meet");
             g = svg.append("g");
             
-            // ZOOM LOGIC: Keeps dots MICROSCOPIC
+            // ZOOM logic: Keeps dots TINY relative to the screen
             zoom = d3.zoom().scaleExtent([1, 80]).on("zoom", (e) => {
                 g.attr("transform", e.transform);
                 currentScale = e.transform.k;
                 d3.selectAll(".city-node")
-                  .attr("r", 1.5 / currentScale) // Reduced radius to tiny pinpoint
-                  .attr("stroke-width", (0.2 / currentScale)); // Reduced halo to hairline
+                  .attr("r", 2.0 / currentScale) // Massively shrunk
+                  .attr("stroke-width", (0.2 / currentScale)); // Hairline stroke
             });
             svg.call(zoom);
 
             try {
-                // SWITCHED TO ISO-CODE BASED MAP SOURCE FOR 100% MATCHING
-                const world = await d3.json("https://raw.githubusercontent.com/deldersveld/topojson/master/world-countries.json");
-                
-                // Filter out Antarctica
-                const countries = topojson.feature(world, world.objects.countries1).features.filter(d => d.id !== "ATA");
+                // RELIABLE CDN SOURCE
+                const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
+                // Remove Antarctica (ID 010)
+                const countries = topojson.feature(world, world.objects.countries).features.filter(d => d.id !== "010");
                 
                 projection = d3.geoMercator().fitSize([width, height * 0.85], {type: "FeatureCollection", features: countries});
                 path = d3.geoPath().projection(projection);
+
+                // MATCHING LOGIC
+                const findDataForMapEntry = (d) => {
+                    // 1. Try ISO Alpha-3 Map
+                    if (gameData[idMap[d.id]]) return gameData[idMap[d.id]];
+                    // 2. Try Numeric ID direct (if gameData used numerics, but it uses Alpha-3)
+                    if (gameData[d.id]) return gameData[d.id];
+                    // 3. Try Name Fallback
+                    const name = d.properties.name;
+                    const normalized = mapToDataName[name] || name;
+                    return Object.entries(gameData).find(([iso, data]) => data.name === normalized)?.[1];
+                };
 
                 g.selectAll("path")
                     .data(countries)
                     .enter().append("path")
                     .attr("d", path)
                     .attr("class", d => {
-                        // MATCH BY ISO CODE (d.id is "USA", "BRA", etc.)
-                        const entry = gameData[d.id];
+                        const entry = findDataForMapEntry(d);
                         const region = entry ? entry.region : "unknown";
                         return `country reg-${region}`;
                     })
-                    .attr("id", d => `country-${d.id}`)
-                    .on("click", handleCountryClick);
+                    .attr("id", d => {
+                        const entry = findDataForMapEntry(d);
+                        // If we found an entry, use the ISO code from our data. If not, use map ID.
+                        const iso = entry ? Object.keys(gameData).find(key => gameData[key] === entry) : d.id;
+                        return `country-${iso}`;
+                    })
+                    .on("click", function(event, d) {
+                        handleCountryClick.call(this, event, d);
+                    });
 
                 startRound();
-            } catch (err) { console.error("Map Load Error:", err); }
+            } catch (err) { console.error("Map Data Error:", err); }
         }
 
         function toggleMode() {
@@ -263,8 +355,8 @@
 
         function handleCountryClick(event, d) {
             if (currentPhase !== "MAP_SELECTION") return;
-            // The ID in this map source IS the ISO code (e.g., "BRA")
-            const clickedISO = d.id; 
+            const clickedId = this.id;
+            const clickedISO = clickedId ? clickedId.replace("country-", "") : null;
 
             if (clickedISO === currentTargetISO) {
                 score += 10; updateScoreUI();
@@ -273,7 +365,8 @@
             } else {
                 score -= 10; updateScoreUI();
                 flashState(this, "wrong");
-                const wrongName = d.properties.name || "Unknown territory";
+                const mapName = d.properties.name;
+                const wrongName = mapToDataName[mapName] || mapName || "Unknown territory";
                 document.getElementById("find-label").innerText = "Find";
                 document.getElementById("main-prompt").innerText = gameData[currentTargetISO].name;
                 document.getElementById("sub-prompt").innerHTML = `That is <span class="wrong-state-highlight">${wrongName}</span>`;
@@ -308,7 +401,7 @@
                 .attr("class", "city-node").attr("cx", d => d.x).attr("cy", d => d.y).attr("r", 0)
                 .on("mouseover", showTooltip).on("mousemove", moveTooltip).on("mouseout", hideTooltip)
                 .on("click", (e, d) => handleCityClick(e, d, iso))
-                .transition().duration(500).delay(800).attr("r", 1.5 / currentScale); // Matches Zoom Logic
+                .transition().duration(500).delay(800).attr("r", 2.0 / currentScale); // Consistent tiny size
         }
 
         function handleCityClick(event, cityNode, iso) {
