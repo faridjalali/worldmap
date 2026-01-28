@@ -21,25 +21,36 @@
     <script src="asia.js"></script>
     <script src="oceania.js"></script>
     
-    <style>
-        :root {
-            --bg-deep: #050505;
-            --map-stroke: rgba(255, 255, 255, 0.15);
-            --neon-blue: #00f3ff;
-            --neon-pink: #ff0055;
-            --neon-green: #00ff9d;
-            --neon-amber: #ffaa00;
-            --glass: rgba(15, 15, 15, 0.85);
-            --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            
-            --c-southwest: rgba(255, 153, 153, 0.40);
-            --c-western: rgba(153, 255, 153, 0.40);
-            --c-northeast: rgba(153, 204, 255, 0.40);
-            --c-midwest: rgba(255, 204, 153, 0.40);
-            --c-southeast: rgba(210, 180, 140, 0.40);
-            --c-oceania: rgba(230, 190, 255, 0.40);
-        }
 
+        <style>
+    :root {
+        --bg-deep: #050505;
+        --map-stroke: rgba(255, 255, 255, 0.15);
+        --neon-blue: #00f3ff;
+        --neon-pink: #ff0055;
+        --neon-green: #00ff9d;
+        --neon-amber: #ffaa00;
+        --glass: rgba(15, 15, 15, 0.85);
+        --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        
+        /* Corrected Continental Colors */
+        --c-north_america: rgba(153, 204, 255, 0.40); /* Light Blue */
+        --c-south_america: rgba(255, 153, 153, 0.40); /* Light Red */
+        --c-europe: rgba(153, 255, 153, 0.40);        /* Light Green */
+        --c-africa: rgba(255, 204, 153, 0.40);        /* ORANGE for Africa */
+        --c-asia: rgba(210, 180, 140, 0.40);          /* Light Brown for Asia */
+        --c-oceania: rgba(230, 190, 255, 0.40);       /* Light Purple */
+    }
+
+    /* Shading Classes */
+    .reg-north_america { fill: var(--c-north_america); }
+    .reg-south_america { fill: var(--c-south_america); }
+    .reg-europe { fill: var(--c-europe); }
+    .reg-africa { fill: var(--c-africa); }
+    .reg-asia { fill: var(--c-asia); }
+    .reg-oceania { fill: var(--c-oceania); }
+
+    
         body {
             margin: 0; background-color: var(--bg-deep); color: white;
             font-family: var(--font-main); overflow: hidden; height: 100vh;
