@@ -2,151 +2,383 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>South America Map Quiz (Offline Fixed)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>South America Maps Quiz</title>
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
     
     <style>
-        body { margin: 0; background-color: #050505; color: white; font-family: sans-serif; overflow: hidden; }
-        
-        /* The Map Stage */
-        #map-stage { 
-            width: 100vw; 
-            height: 100vh; 
-            /* Red border helps you see if the div exists. Remove later if you want. */
-            border: 1px solid #333; 
+        :root {
+            --bg-deep: #050505;
+            --map-stroke: rgba(255, 255, 255, 0.15);
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff0055;
+            --neon-green: #00ff9d;
+            --neon-amber: #ffaa00;
+            --glass: rgba(15, 15, 15, 0.85);
+            --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            
+            /* Regional Colors */
+            --c-southwest: rgba(255, 153, 153, 0.40);
+            --c-western: rgba(153, 255, 153, 0.40);
+            --c-northeast: rgba(153, 204, 255, 0.40);
+            --c-midwest: rgba(255, 204, 153, 0.40);
+            --c-southeast: rgba(210, 180, 140, 0.40);
         }
 
-        /* Country Styling */
-        .country { 
-            fill: #1a1a1a; 
-            stroke: #444; 
+        body {
+            margin: 0; background-color: var(--bg-deep); color: white;
+            font-family: var(--font-main); overflow: hidden; height: 100vh;
+            width: 100vw; user-select: none; touch-action: none; padding-top: 40px; box-sizing: border-box;
+        }
+
+        #map-stage { width: 100%; height: calc(100% - 40px); cursor: crosshair; }
+
+        /* Map Styling */
+        .state { 
+            stroke: var(--map-stroke); 
             stroke-width: 1px; 
-            cursor: pointer; 
-            transition: all 0.2s ease;
+            transition: fill 0.3s, opacity 0.3s, stroke 0.3s; 
+            vector-effect: non-scaling-stroke; 
         }
-        .country:hover { fill: #333; stroke: #fff; }
         
-        /* Quiz Feedback States */
-        .correct { fill: #00ff9d !important; transition: fill 0.1s; }
-        .wrong { fill: #ff0055 !important; transition: fill 0.1s; }
+        /* Regional Fills */
+        .reg-western { fill: var(--c-western); }
+        .reg-northeast { fill: var(--c-northeast); }
+        .reg-midwest { fill: var(--c-midwest); }
+        .reg-southeast { fill: var(--c-southeast); }
 
-        /* UI Styling */
-        #ui-layer { position: absolute; top: 20px; width: 100%; pointer-events: none; display: flex; flex-direction: column; align-items: center; }
-        .hud-panel { pointer-events: auto; background: rgba(30,30,30,0.9); padding: 15px 30px; border-radius: 30px; border: 1px solid #555; text-align: center; }
-        .label { font-size: 0.8rem; color: #888; letter-spacing: 2px; text-transform: uppercase; }
-        .main-text { font-size: 2rem; font-weight: 900; color: white; margin: 5px 0; }
-        .sub-text { color: #00f3ff; font-weight: bold; }
+        .state:hover { opacity: 0.8; stroke: rgba(255,255,255,0.6); stroke-width: 1.5px; }
+        .state.active-focused { opacity: 1; stroke: #fff; stroke-width: 3px; fill-opacity: 0.2; }
+
+        /* Animation Classes */
+        .state.correct-flash { animation: flashSuccess 0.5s forwards; }
+        .state.wrong-flash { animation: flashError 0.5s forwards; }
+        @keyframes flashSuccess { 0% { fill: var(--neon-green); opacity: 1; } 100% { fill: inherit; opacity: 1; } }
+        @keyframes flashError { 0% { fill: var(--neon-pink); opacity: 1; } 100% { fill: inherit; opacity: 1; } }
+
+        /* City Nodes */
+        .city-node { fill: var(--neon-blue); stroke: rgba(0, 243, 255, 0.2); stroke-width: 5px; cursor: pointer; transition: all 0.3s; pointer-events: none; }
+        .city-node:hover { fill: #fff; stroke: var(--neon-blue); stroke-width: 8px; transform: scale(1.5); }
+        .city-node.wrong-choice { fill: var(--neon-pink); stroke: var(--neon-pink); pointer-events: none; opacity: 0.6; }
+        .city-node.correct-choice { fill: var(--neon-green); stroke: var(--neon-green); }
+
+        /* UI Layers */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+
+        #top-hud {
+            position: absolute; top: 60px; left: 50%; transform: translateX(-50%);
+            background: var(--glass); border: 1px solid rgba(255,255,255,0.1);
+            padding: 10px 30px; border-radius: 50px; display: flex; gap: 40px;
+            backdrop-filter: blur(15px); z-index: 10; pointer-events: auto;
+        }
+
+        .hud-group { display: flex; flex-direction: column; align-items: center; min-width: 70px; }
+        .hud-item { font-size: 0.7rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 2px; }
+        .hud-val { color: var(--neon-blue); font-weight: 800; font-size: 1.2rem; }
+
+        .toggle-container { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+        .toggle-switch { width: 40px; height: 20px; background: #333; border-radius: 20px; position: relative; transition: 0.3s; border: 1px solid #444; }
+        .toggle-knob { width: 16px; height: 16px; background: white; border-radius: 50%; position: absolute; top: 1px; left: 2px; transition: 0.3s; }
+        .active .toggle-switch { background: var(--neon-blue); }
+        .active .toggle-knob { left: 21px; }
+
+        #prompt-container { position: absolute; top: 20%; width: 100%; text-align: center; text-shadow: 0 5px 25px black; padding: 0 20px; box-sizing: border-box; }
+        #find-label { font-size: 1.2rem; text-transform: uppercase; color: #888; letter-spacing: 4px; margin: 0; }
+        #main-prompt { font-size: 1.8rem; font-weight: 900; margin: 5px 0 0; transition: all 0.4s; letter-spacing: 0.5px; line-height: 1.3; }
+        #sub-prompt { font-size: 1.1rem; color: var(--neon-blue); margin-top: 8px; letter-spacing: 1px; }
+
+        .wrong-state-highlight { color: var(--neon-amber); font-weight: 800; }
+
+        #city-tooltip { position: absolute; background: rgba(0,0,0,0.9); border: 1px solid var(--neon-blue); color: white; padding: 5px 12px; border-radius: 4px; font-size: 0.85rem; pointer-events: none; opacity: 0; transform: translate(-50%, -150%); white-space: nowrap; z-index: 50; }
+
+        #fact-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); backdrop-filter: blur(20px); z-index: 100; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        #fact-overlay.show { opacity: 1; pointer-events: auto; }
+        .fact-card { background: #111; border: 2px solid var(--neon-blue); border-radius: 20px; padding: 45px; max-width: 500px; width: 92%; text-align: center; }
+        .fact-status { font-weight: 800; letter-spacing: 4px; margin-bottom: 12px; font-size: 1.1rem; text-transform: uppercase; }
+        .status-correct { color: var(--neon-green); }
+        .status-wrong { color: var(--neon-pink); }
+        .fact-city { font-size: 2.6rem; margin: 0 0 15px; color: white; font-weight: 900; }
+        .fact-body { color: #ddd; line-height: 1.7; margin-bottom: 35px; font-size: 1.1rem; }
+        .next-btn { background: var(--neon-blue); color: #000; border: none; padding: 16px 45px; font-weight: 800; border-radius: 40px; cursor: pointer; text-transform: uppercase; transition: 0.2s; }
+        .next-btn:hover { background: white; transform: scale(1.05); }
+
+        @media (max-width: 600px) {
+            #top-hud { gap: 20px; padding: 10px 20px; }
+            #main-prompt { font-size: 1.4rem; }
+        }
     </style>
 </head>
 <body>
 
+    <div id="city-tooltip">City Name</div>
+    <div id="map-stage"></div>
+
     <div id="ui-layer">
-        <div class="hud-panel">
-            <div class="label">Find Country</div>
-            <div id="target-display" class="main-text">Loading...</div>
-            <div id="score-display" class="sub-text">Score: 0</div>
+        <div id="top-hud">
+            <div class="hud-group">
+                <span class="hud-item">Target</span>
+                <span id="target-state" class="hud-val">--</span>
+            </div>
+            <div class="hud-group">
+                <span class="hud-item">Score</span>
+                <span id="score-val" class="hud-val">0</span>
+            </div>
+            <div class="hud-group toggle-container active" id="mode-toggle" onclick="toggleMode()">
+                <span class="hud-item" id="mode-label">Capital</span>
+                <div class="toggle-switch">
+                    <div class="toggle-knob"></div>
+                </div>
+            </div>
+        </div>
+        <div id="prompt-container">
+            <p id="find-label">Initializing...</p>
+            <h1 id="main-prompt">System Loading...</h1>
+            <div id="sub-prompt"></div>
         </div>
     </div>
 
-    <div id="map-stage"></div>
+    <div id="fact-overlay">
+        <div class="fact-card">
+            <div class="fact-status" id="fact-status">Result</div>
+            <div class="fact-city" id="fact-city-name">City</div>
+            <div class="fact-body" id="fact-text">Fact</div>
+            <button class="next-btn" id="next-action-btn">Continue</button>
+        </div>
+    </div>
 
     <script>
-        // --- 1. EMBEDDED MAP DATA (Fixed Structure) ---
-        // These are simplified polygon shapes for South America.
-        // NOTE: Coordinates are [[[x,y], [x,y]]] (Triple nested)
-        const southAmericaGeoJSON = {
+        // --- 1. EMBEDDED MAP GEOMETRY (South America) ---
+        // Coordinates simplified for embedding, topologically correct for quiz purposes.
+        const saGeoJSON = {
             "type": "FeatureCollection",
             "features": [
-                { "id": "ARG", "properties": { "name": "Argentina" }, "geometry": { "type": "Polygon", "coordinates": [[ [-68,-55], [-73,-50], [-70,-30], [-65,-22], [-55,-26], [-57,-35], [-68,-55] ]] } },
-                { "id": "BOL", "properties": { "name": "Bolivia" }, "geometry": { "type": "Polygon", "coordinates": [[ [-69,-17], [-65,-10], [-60,-13], [-58,-20], [-62,-22], [-69,-23], [-69,-17] ]] } },
-                { "id": "BRA", "properties": { "name": "Brazil" }, "geometry": { "type": "Polygon", "coordinates": [[ [-53,-33], [-58,-30], [-58,-20], [-70,-10], [-70,-5], [-65,0], [-50,2], [-35,-5], [-39,-18], [-53,-33] ]] } },
-                { "id": "CHL", "properties": { "name": "Chile" }, "geometry": { "type": "Polygon", "coordinates": [[ [-75,-55], [-70,-55], [-68,-22], [-70,-18], [-74,-18], [-75,-55] ]] } },
-                { "id": "COL", "properties": { "name": "Colombia" }, "geometry": { "type": "Polygon", "coordinates": [[ [-79,2], [-77,8], [-72,12], [-67,6], [-67,1], [-70,-4], [-79,2] ]] } },
-                { "id": "ECU", "properties": { "name": "Ecuador" }, "geometry": { "type": "Polygon", "coordinates": [[ [-81,-3], [-78,1], [-75,-1], [-80,-5], [-81,-3] ]] } },
-                { "id": "GUY", "properties": { "name": "Guyana" }, "geometry": { "type": "Polygon", "coordinates": [[ [-61,8], [-57,6], [-58,1], [-61,4], [-61,8] ]] } },
-                { "id": "PRY", "properties": { "name": "Paraguay" }, "geometry": { "type": "Polygon", "coordinates": [[ [-62,-22], [-55,-22], [-55,-27], [-58,-27], [-62,-22] ]] } },
-                { "id": "PER", "properties": { "name": "Peru" }, "geometry": { "type": "Polygon", "coordinates": [[ [-81,-5], [-70,-3], [-69,-15], [-70,-18], [-75,-15], [-81,-5] ]] } },
-                { "id": "SUR", "properties": { "name": "Suriname" }, "geometry": { "type": "Polygon", "coordinates": [[ [-57,6], [-54,6], [-54,2], [-57,2], [-57,6] ]] } },
-                { "id": "URY", "properties": { "name": "Uruguay" }, "geometry": { "type": "Polygon", "coordinates": [[ [-58,-34], [-53,-32], [-53,-35], [-58,-34] ]] } },
-                { "id": "VEN", "properties": { "name": "Venezuela" }, "geometry": { "type": "Polygon", "coordinates": [[ [-73,12], [-60,10], [-60,4], [-67,1], [-73,12] ]] } }
+                { "id": "ARG", "properties": { "name": "Argentina" }, "geometry": { "type": "Polygon", "coordinates": [[ [-68.6,-54.8], [-73.5,-50.5], [-70.3,-32.0], [-62.3,-22.1], [-53.6,-26.2], [-56.5,-36.0], [-57.1,-37.6], [-68.6,-54.8] ]] } },
+                { "id": "BOL", "properties": { "name": "Bolivia" }, "geometry": { "type": "Polygon", "coordinates": [[ [-69.6,-17.5], [-65.2,-10.9], [-60.2,-13.5], [-57.5,-19.5], [-62.8,-22.1], [-67.3,-22.8], [-69.6,-17.5] ]] } },
+                { "id": "BRA", "properties": { "name": "Brazil" }, "geometry": { "type": "Polygon", "coordinates": [[ [-53.1,-33.7], [-57.6,-30.2], [-58.1,-20.3], [-65.3,-10.4], [-70.0,-8.2], [-73.0,1.4], [-67.1,1.8], [-60.0,5.1], [-51.3,4.3], [-34.8,-7.0], [-39.5,-18.2], [-53.1,-33.7] ]] } },
+                { "id": "CHL", "properties": { "name": "Chile" }, "geometry": { "type": "Polygon", "coordinates": [[ [-75.6,-53.6], [-68.6,-54.8], [-68.0,-23.0], [-70.3,-18.3], [-73.3,-19.1], [-75.6,-53.6] ]] } },
+                { "id": "COL", "properties": { "name": "Colombia" }, "geometry": { "type": "Polygon", "coordinates": [[ [-78.9,1.5], [-77.8,8.5], [-75.3,10.6], [-71.2,11.8], [-67.3,6.2], [-67.0,1.6], [-69.9,-4.2], [-78.9,1.5] ]] } },
+                { "id": "ECU", "properties": { "name": "Ecuador" }, "geometry": { "type": "Polygon", "coordinates": [[ [-81.1,-3.5], [-78.5,1.4], [-75.2,-0.1], [-77.6,-4.8], [-81.1,-3.5] ]] } },
+                { "id": "GUY", "properties": { "name": "Guyana" }, "geometry": { "type": "Polygon", "coordinates": [[ [-61.4,8.4], [-57.1,6.0], [-58.5,1.2], [-61.0,4.0], [-61.4,8.4] ]] } },
+                { "id": "PRY", "properties": { "name": "Paraguay" }, "geometry": { "type": "Polygon", "coordinates": [[ [-62.6,-22.1], [-54.5,-23.8], [-54.6,-27.5], [-58.6,-27.4], [-62.6,-22.1] ]] } },
+                { "id": "PER", "properties": { "name": "Peru" }, "geometry": { "type": "Polygon", "coordinates": [[ [-81.3,-4.6], [-70.3,-2.8], [-68.7,-16.5], [-70.4,-18.3], [-75.5,-14.8], [-81.3,-4.6] ]] } },
+                { "id": "SUR", "properties": { "name": "Suriname" }, "geometry": { "type": "Polygon", "coordinates": [[ [-57.1,6.0], [-54.0,5.8], [-54.5,2.0], [-57.5,2.1], [-57.1,6.0] ]] } },
+                { "id": "URY", "properties": { "name": "Uruguay" }, "geometry": { "type": "Polygon", "coordinates": [[ [-58.4,-33.9], [-53.5,-31.6], [-53.1,-33.7], [-56.2,-34.9], [-58.4,-33.9] ]] } },
+                { "id": "VEN", "properties": { "name": "Venezuela" }, "geometry": { "type": "Polygon", "coordinates": [[ [-73.3,11.6], [-62.0,10.7], [-59.8,8.6], [-59.8,4.5], [-67.3,1.0], [-73.3,11.6] ]] } },
+                // French Guiana (Included for visual completeness, but inactive in quiz)
+                { "id": "GUF", "properties": { "name": "French Guiana" }, "geometry": { "type": "Polygon", "coordinates": [[ [-54.0,5.8], [-51.6,4.5], [-52.5,2.0], [-54.5,2.0], [-54.0,5.8] ]] } }
             ]
         };
 
-        // --- 2. GAME LOGIC ---
+        // --- 2. GAME DATA (ISO-3 Codes) ---
+        const gameData = {
+            "ARG": { "name": "Argentina", "region": "southeast", "capital": "Buenos Aires", "cities": { "Buenos Aires": [-58.38, -34.60], "Córdoba": [-64.18, -31.41], "Rosario": [-60.63, -32.94] }, "facts": { "Buenos Aires": "Known as the 'Paris of South America'.", "Córdoba": "Home to the oldest university in the country.", "Rosario": "The birthplace of Che Guevara and Lionel Messi." }},
+            "BRA": { "name": "Brazil", "region": "midwest", "capital": "Brasília", "cities": { "Brasília": [-47.88, -15.79], "Rio de Janeiro": [-43.17, -22.90], "São Paulo": [-46.63, -23.55] }, "facts": { "Brasília": "A planned city built in the shape of an airplane.", "Rio de Janeiro": "Famous for its Carnival and Christ the Redeemer statue.", "São Paulo": "The largest city in South America by population." }},
+            "CHL": { "name": "Chile", "region": "western", "capital": "Santiago", "cities": { "Santiago": [-70.64, -33.44], "Valparaíso": [-71.61, -33.04] }, "facts": { "Santiago": "Surrounded by the Andes, visible from almost anywhere in the city.", "Valparaíso": "A coastal city known for its colorful hills and funiculars." }},
+            "COL": { "name": "Colombia", "region": "northeast", "capital": "Bogotá", "cities": { "Bogotá": [-74.07, 4.71], "Medellín": [-75.56, 6.24] }, "facts": { "Bogotá": "Situated at an average of 2,640 meters above sea level.", "Medellín": "Transformed from 'most dangerous' to an award-winning innovative hub." }},
+            "PER": { "name": "Peru", "region": "western", "capital": "Lima", "cities": { "Lima": [-77.04, -12.04], "Cusco": [-71.96, -13.53] }, "facts": { "Lima": "Known as the Gastronomy Capital of the world.", "Cusco": "The former capital of the Inca Empire." }},
+            "VEN": { "name": "Venezuela", "region": "northeast", "capital": "Caracas", "cities": { "Caracas": [-66.90, 10.48], "Maracaibo": [-71.64, 10.64] }, "facts": { "Caracas": "Nestled in a valley separated from the Caribbean by the El Ávila mountain.", "Maracaibo": "Located near the bridge over Lake Maracaibo, one of the world's longest." }},
+            "BOL": { "name": "Bolivia", "region": "western", "capital": "La Paz", "cities": { "La Paz": [-68.11, -16.48], "Sucre": [-65.25, -19.03] }, "facts": { "La Paz": "The highest administrative capital in the world.", "Sucre": "The constitutional capital, known as the 'White City'." }},
+            "ECU": { "name": "Ecuador", "region": "western", "capital": "Quito", "cities": { "Quito": [-78.46, -0.18], "Guayaquil": [-79.90, -2.18] }, "facts": { "Quito": "The first city ever to be named a UNESCO World Heritage site.", "Guayaquil": "The nation's main port and largest city." }},
+            "PRY": { "name": "Paraguay", "region": "midwest", "capital": "Asunción", "cities": { "Asunción": [-57.57, -25.26] }, "facts": { "Asunción": "One of the oldest cities in South America, founded in 1537." }},
+            "URY": { "name": "Uruguay", "region": "southeast", "capital": "Montevideo", "cities": { "Montevideo": [-56.16, -34.90] }, "facts": { "Montevideo": "Consistently ranked as having the highest quality of life in Latin America." }},
+            "GUY": { "name": "Guyana", "region": "northeast", "capital": "Georgetown", "cities": { "Georgetown": [-58.15, 6.80] }, "facts": { "Georgetown": "Known for its unique wooden colonial architecture." }},
+            "SUR": { "name": "Suriname", "region": "northeast", "capital": "Paramaribo", "cities": { "Paramaribo": [-55.20, 5.85] }, "facts": { "Paramaribo": "Known for its diverse mix of Dutch and local architecture." }}
+        };
+
+        // --- 3. GAME ENGINE ---
+        let svg, g, zoom, projection, path;
+        let width, height;
+        let currentTargetAbbr = "";
+        let currentPhase = "MAP_SELECTION"; 
         let score = 0;
-        let targetISO = "";
-        
-        // Setup SVG
-        const container = document.getElementById("map-stage");
-        const width = container.clientWidth;
-        const height = container.clientHeight;
-        
-        const svg = d3.select("#map-stage").append("svg")
-            .attr("width", width)
-            .attr("height", height)
-            .attr("viewBox", `0 0 ${width} ${height}`);
+        let visited = new Set();
+        let currentScale = 1;
+        let isCapitalMode = true;
+        let targetCityName = "";
 
-        // Define Projection (Auto-fits the data to the screen)
-        const projection = d3.geoMercator()
-            .fitSize([width, height], southAmericaGeoJSON);
+        window.onload = initGame;
+
+        function initGame() {
+            width = document.getElementById("map-stage").clientWidth;
+            height = document.getElementById("map-stage").clientHeight;
             
-        const pathGenerator = d3.geoPath().projection(projection);
-
-        // Draw Map
-        const g = svg.append("g");
-        
-        g.selectAll("path")
-            .data(southAmericaGeoJSON.features)
-            .enter()
-            .append("path")
-            .attr("d", pathGenerator)
-            .attr("class", "country")
-            .attr("id", d => d.id)
-            .on("click", handleInput);
-
-        // Start Game
-        pickNewTarget();
-
-        function pickNewTarget() {
-            const features = southAmericaGeoJSON.features;
-            const random = features[Math.floor(Math.random() * features.length)];
-            targetISO = random.id;
+            const container = d3.select("#map-stage");
+            svg = container.append("svg").attr("viewBox", `0 0 ${width} ${height}`).attr("preserveAspectRatio", "xMidYMid meet");
+            g = svg.append("g");
             
-            // UI Update
-            document.getElementById("target-display").innerText = random.properties.name;
-            
-            // Clear previous colors
-            d3.selectAll(".country").classed("correct", false).classed("wrong", false);
+            // Zoom Behavior
+            zoom = d3.zoom().scaleExtent([1, 15]).on("zoom", (e) => {
+                g.attr("transform", e.transform);
+                currentScale = e.transform.k;
+                d3.selectAll(".city-node").attr("r", 6 / currentScale).attr("stroke-width", (2/currentScale));
+                d3.selectAll(".state").attr("stroke-width", 1 / currentScale);
+            });
+            svg.call(zoom);
+
+            // Projection: Mercator fits to South America Features
+            projection = d3.geoMercator().fitSize([width, height], saGeoJSON);
+            path = d3.geoPath().projection(projection);
+
+            // Draw Map
+            g.selectAll("path")
+                .data(saGeoJSON.features)
+                .enter().append("path")
+                .attr("d", path)
+                .attr("class", d => {
+                    const abbr = d.id;
+                    const region = gameData[abbr] ? gameData[abbr].region : "unknown"; // Handle French Guiana
+                    return `state reg-${region}`;
+                })
+                .attr("id", d => `state-${d.id}`)
+                .on("click", handleStateClick);
+
+            startRound();
         }
 
-        function handleInput(e, d) {
-            const clickedISO = d.id;
-            const el = d3.select(this);
-
-            if (clickedISO === targetISO) {
-                // Correct
-                score += 10;
-                el.classed("correct", true);
-                setTimeout(pickNewTarget, 600);
+        function toggleMode() {
+            if (currentPhase === "CITY_SELECTION") return; 
+            isCapitalMode = !isCapitalMode;
+            const container = document.getElementById('mode-toggle');
+            const label = document.getElementById('mode-label');
+            if (isCapitalMode) {
+                container.classList.add('active');
+                label.innerText = 'Capital';
             } else {
-                // Wrong
-                score -= 5;
-                el.classed("wrong", true);
-                setTimeout(() => el.classed("wrong", false), 400);
+                container.classList.remove('active');
+                label.innerText = 'Fact';
             }
-            document.getElementById("score-display").innerText = "Score: " + score;
         }
 
-        // Handle Window Resize
-        window.addEventListener("resize", () => {
-            const w = container.clientWidth;
-            const h = container.clientHeight;
-            svg.attr("width", w).attr("height", h);
-            projection.fitSize([w, h], southAmericaGeoJSON);
-            g.selectAll("path").attr("d", pathGenerator);
-        });
+        function startRound() {
+            const keys = Object.keys(gameData);
+            const available = keys.filter(k => !visited.has(k));
+            if (available.length === 0) { 
+                alert("Game Complete! Score: " + score); 
+                visited.clear(); score = 0; startRound(); return; 
+            }
 
+            currentTargetAbbr = available[Math.floor(Math.random() * available.length)];
+            visited.add(currentTargetAbbr);
+            
+            currentPhase = "MAP_SELECTION";
+            resetZoom();
+            d3.selectAll(".state").classed("active-focused", false);
+            d3.selectAll(".city-node").remove();
+            document.getElementById("fact-overlay").classList.remove("show");
+
+            document.getElementById("find-label").innerText = "Find Country";
+            document.getElementById("main-prompt").innerText = gameData[currentTargetAbbr].name;
+            document.getElementById("target-state").innerText = currentTargetAbbr;
+            document.getElementById("sub-prompt").innerText = ""; 
+            updateScoreUI();
+        }
+
+        function handleStateClick(event, d) {
+            if (currentPhase !== "MAP_SELECTION") return;
+            // Ignore French Guiana or non-game territories
+            if (!gameData[d.id]) return;
+
+            const clickedAbbr = d.id;
+
+            if (clickedAbbr === currentTargetAbbr) {
+                score += 10; updateScoreUI();
+                flashState(this, "correct");
+                transitionToCityPhase(d, clickedAbbr);
+            } else {
+                score -= 5; updateScoreUI();
+                flashState(this, "wrong");
+                const wrongName = gameData[clickedAbbr] ? gameData[clickedAbbr].name : "unknown territory";
+                const targetName = gameData[currentTargetAbbr].name;
+                document.getElementById("sub-prompt").innerHTML = `That is <span class="wrong-state-highlight">${wrongName}</span>. Try again.`;
+            }
+        }
+
+        function transitionToCityPhase(geoData, abbr) {
+            currentPhase = "CITY_SELECTION";
+            zoomToState(geoData);
+            d3.select(`#state-${abbr}`).classed("active-focused", true);
+            
+            const data = gameData[abbr];
+            document.getElementById("find-label").innerText = "Find City";
+            document.getElementById("sub-prompt").innerText = ""; 
+            
+            if (isCapitalMode) {
+                targetCityName = data.capital;
+                document.getElementById("main-prompt").innerText = `Capital: ${targetCityName}`;
+            } else {
+                const cityNames = Object.keys(data.cities);
+                targetCityName = cityNames[Math.floor(Math.random() * cityNames.length)];
+                document.getElementById("main-prompt").innerText = "Identify this city:";
+                document.getElementById("sub-prompt").innerText = `"${data.facts[targetCityName]}"`;
+            }
+            
+            plotCities(abbr);
+            setTimeout(() => { d3.selectAll(".city-node").style("pointer-events", "auto"); }, 800);
+        }
+
+        function plotCities(abbr) {
+            const data = gameData[abbr];
+            const nodes = Object.entries(data.cities).map(([name, coords]) => {
+                const projected = projection(coords);
+                return projected ? { name, x: projected[0], y: projected[1] } : null;
+            }).filter(n => n);
+
+            g.selectAll(".city-node").data(nodes).enter().append("circle")
+                .attr("class", "city-node").attr("cx", d => d.x).attr("cy", d => d.y).attr("r", 0)
+                .on("mouseover", showTooltip).on("mousemove", moveTooltip).on("mouseout", hideTooltip)
+                .on("click", (e, d) => handleCityClick(e, d, abbr))
+                .transition().duration(500).delay(400).attr("r", 6 / currentScale);
+        }
+
+        function handleCityClick(event, cityNode, abbr) {
+            const isCorrect = cityNode.name === targetCityName;
+            const dot = d3.select(event.currentTarget);
+
+            if (isCorrect) {
+                dot.classed("correct-choice", true);
+                score += 20; updateScoreUI();
+                showFact(cityNode.name, abbr, "CORRECT", "status-correct");
+            } else {
+                dot.classed("wrong-choice", true);
+                score -= 10; updateScoreUI();
+                showFact(cityNode.name, abbr, "INCORRECT", "status-wrong");
+            }
+        }
+
+        function showFact(cityName, abbr, status, statusClass) {
+            const data = gameData[abbr];
+            const overlay = document.getElementById("fact-overlay");
+            const btn = document.getElementById("next-action-btn");
+            
+            document.getElementById("fact-status").innerText = status;
+            document.getElementById("fact-status").className = `fact-status ${statusClass}`;
+            document.getElementById("fact-city-name").innerText = cityName;
+            document.getElementById("fact-text").innerHTML = data.facts[cityName];
+
+            btn.innerText = (status === "CORRECT") ? "Next Country" : "Close";
+            btn.onclick = (status === "CORRECT") ? resetGameRound : () => overlay.classList.remove("show");
+
+            overlay.classList.add("show");
+        }
+
+        function updateScoreUI() { document.getElementById("score-val").innerText = score; }
+        function showTooltip(e, d) { const tt = document.getElementById("city-tooltip"); tt.innerText = d.name; tt.style.opacity = 1; }
+        function moveTooltip(e) { const tt = document.getElementById("city-tooltip"); tt.style.left = e.pageX + "px"; tt.style.top = e.pageY + "px"; }
+        function hideTooltip() { document.getElementById("city-tooltip").style.opacity = 0; }
+        function resetGameRound() { startRound(); }
+
+        function zoomToState(d) {
+            const b = path.bounds(d);
+            const dx = b[1][0] - b[0][0], dy = b[1][1] - b[0][1];
+            const x = (b[0][0] + b[1][0]) / 2, y = (b[0][1] + b[1][1]) / 2;
+            const s = Math.max(1, Math.min(10, 0.7 / Math.max(dx / width, dy / height)));
+            const t = [width / 2 - s * x, height / 2 - s * y];
+            svg.transition().duration(1000).call(zoom.transform, d3.zoomIdentity.translate(t[0], t[1]).scale(s));
+        }
+
+        function resetZoom() { svg.transition().duration(1000).call(zoom.transform, d3.zoomIdentity); }
+        function flashState(el, type) { d3.select(el).classed(type+"-flash", true); setTimeout(() => d3.select(el).classed(type+"-flash", false), 500); }
     </script>
 </body>
 </html>
