@@ -2,337 +2,333 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Maps Quiz | Performance Fix</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>South America Map Quiz</title>
+    
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/topojson-client@3"></script>
     
     <style>
-        body { margin: 0; padding: 0; background-color: #050505; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
-        #chartdiv { width: 100%; height: 100vh; }
+        :root {
+            --bg-deep: #0a0a0c;
+            --map-stroke: rgba(255, 255, 255, 0.2);
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff0055;
+            --neon-green: #00ff9d;
+            --neon-amber: #ffaa00;
+            --glass: rgba(20, 20, 25, 0.8);
+            --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            
+            /* Regional Colors */
+            --c-western: rgba(100, 255, 218, 0.3);
+            --c-northeast: rgba(122, 142, 255, 0.3);
+            --c-midwest: rgba(255, 212, 100, 0.3);
+            --c-southeast: rgba(255, 100, 150, 0.3);
+        }
 
-        /* UI OVERLAY */
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+        body {
+            margin: 0; background-color: var(--bg-deep); color: white;
+            font-family: var(--font-main); overflow: hidden; height: 100vh;
+            width: 100vw; user-select: none; touch-action: none; box-sizing: border-box;
+        }
+
+        #map-stage { width: 100%; height: 100%; cursor: crosshair; }
+
+        .state { 
+            stroke: var(--map-stroke); 
+            stroke-width: 1px; 
+            transition: fill 0.3s, opacity 0.3s; 
+            vector-effect: non-scaling-stroke;
+            outline: none;
+        }
         
+        /* Region Styling based on Game Data */
+        .reg-western { fill: var(--c-western); }
+        .reg-northeast { fill: var(--c-northeast); }
+        .reg-midwest { fill: var(--c-midwest); }
+        .reg-southeast { fill: var(--c-southeast); }
+        .reg-unknown { fill: #222; }
+
+        .state:hover { opacity: 0.8; stroke: rgba(255,255,255,0.6); }
+        .state.active-focused { opacity: 1; stroke: #fff; stroke-width: 2.5px; }
+
+        .state.correct-flash { animation: flashSuccess 0.5s forwards; }
+        .state.wrong-flash { animation: flashError 0.5s forwards; }
+        
+        @keyframes flashSuccess { 0% { fill: var(--neon-green); } 100% { fill: inherit; } }
+        @keyframes flashError { 0% { fill: var(--neon-pink); } 100% { fill: inherit; } }
+
+        .city-node { 
+            fill: var(--neon-blue); 
+            stroke: rgba(0, 243, 255, 0.4); 
+            stroke-width: 2px; 
+            cursor: pointer; 
+            transition: all 0.2s; 
+            pointer-events: none; 
+        }
+        .city-node:hover { fill: #fff; transform: scale(1.2); }
+        .city-node.wrong-choice { fill: var(--neon-pink); stroke: var(--neon-pink); }
+        .city-node.correct-choice { fill: var(--neon-green); stroke: var(--neon-green); }
+
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+
         #top-hud {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(15, 15, 15, 0.95); border: 1px solid rgba(255,255,255,0.2);
-            padding: 10px 40px; border-radius: 50px; display: flex; gap: 50px;
-            backdrop-filter: blur(10px); pointer-events: auto;
+            position: absolute; top: 30px; left: 50%; transform: translateX(-50%);
+            background: var(--glass); border: 1px solid rgba(255,255,255,0.1);
+            padding: 10px 30px; border-radius: 50px; display: flex; gap: 40px;
+            backdrop-filter: blur(15px); z-index: 10; pointer-events: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        .hud-item { text-align: center; }
-        .hud-label { display: block; font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 2px; }
-        .hud-val { color: #00f3ff; font-weight: 800; font-size: 1.4rem; }
+        .hud-group { display: flex; flex-direction: column; align-items: center; min-width: 80px; }
+        .hud-item { font-size: 0.65rem; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 2px; }
+        .hud-val { color: var(--neon-blue); font-weight: 800; font-size: 1.1rem; }
 
-        #prompt-container { 
-            position: absolute; top: 15%; width: 100%; text-align: center; 
-            text-shadow: 0 4px 15px black; pointer-events: none;
-        }
-        #main-prompt { font-size: 2.5rem; color: white; font-weight: 900; margin: 0; }
-        #sub-prompt { font-size: 1.2rem; color: #00f3ff; margin-top: 10px; font-weight: 600; }
+        .toggle-container { display: flex; flex-direction: column; align-items: center; cursor: pointer; }
+        .toggle-switch { width: 36px; height: 18px; background: #333; border-radius: 20px; position: relative; margin-top: 4px; border: 1px solid #444; }
+        .toggle-knob { width: 14px; height: 14px; background: white; border-radius: 50%; position: absolute; top: 1px; left: 2px; transition: 0.3s; }
+        .active .toggle-switch { background: var(--neon-blue); }
+        .active .toggle-knob { left: 18px; }
 
-        /* MODE TOGGLE */
-        .toggle-btn {
-            background: #333; border: 1px solid #555; color: white;
-            padding: 5px 15px; border-radius: 20px; cursor: pointer;
-            font-size: 0.8rem; text-transform: uppercase; margin-top: 5px;
-        }
-        .toggle-btn.active { background: #00f3ff; color: black; border-color: #00f3ff; font-weight: bold; }
+        #prompt-container { position: absolute; top: 140px; width: 100%; text-align: center; text-shadow: 0 4px 15px rgba(0,0,0,0.8); }
+        #find-label { font-size: 1rem; text-transform: uppercase; color: #aaa; letter-spacing: 4px; margin: 0; }
+        #main-prompt { font-size: 2.2rem; font-weight: 900; margin: 5px 0 0; letter-spacing: 1px; }
+        #sub-prompt { font-size: 1rem; color: var(--neon-amber); margin-top: 8px; font-weight: 600; }
 
-        /* FACT CARD */
-        #fact-overlay {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.85); 
-            display: flex; justify-content: center; align-items: center; 
-            opacity: 0; pointer-events: none; transition: opacity 0.3s; z-index: 100;
-        }
+        #city-tooltip { position: absolute; background: #000; border: 1px solid var(--neon-blue); color: white; padding: 4px 10px; border-radius: 4px; font-size: 0.8rem; pointer-events: none; opacity: 0; z-index: 100; transform: translate(-50%, -130%); }
+
+        #fact-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(10px); z-index: 200; display: flex; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
         #fact-overlay.show { opacity: 1; pointer-events: auto; }
-        
-        .fact-card {
-            background: #111; border: 2px solid #00f3ff; border-radius: 20px; 
-            padding: 40px; max-width: 500px; width: 90%; text-align: center; color: white;
-        }
-        .fact-title { font-size: 2rem; margin: 0 0 20px; color: #fff; }
-        .fact-text { font-size: 1.1rem; line-height: 1.6; color: #ccc; margin-bottom: 30px; }
-        .next-btn {
-            background: #00f3ff; color: black; border: none; padding: 15px 40px;
-            font-size: 1rem; font-weight: bold; border-radius: 30px; cursor: pointer;
-        }
-        .next-btn:hover { transform: scale(1.05); background: white; }
+        .fact-card { background: #15151a; border: 1px solid var(--neon-blue); border-radius: 20px; padding: 40px; max-width: 450px; width: 85%; text-align: center; box-shadow: 0 0 50px rgba(0,243,255,0.15); }
+        .fact-status { font-weight: 800; letter-spacing: 3px; margin-bottom: 10px; text-transform: uppercase; }
+        .status-correct { color: var(--neon-green); }
+        .status-wrong { color: var(--neon-pink); }
+        .fact-city { font-size: 2.2rem; margin: 10px 0; color: white; font-weight: 900; }
+        .fact-body { color: #ccc; line-height: 1.6; margin-bottom: 30px; font-size: 1rem; }
+        .next-btn { background: var(--neon-blue); color: #000; border: none; padding: 14px 40px; font-weight: 800; border-radius: 30px; cursor: pointer; text-transform: uppercase; }
     </style>
-
-    <script>const gameData = {};</script>
-    <script src="north_america.js"></script>
-    <script src="south_america.js"></script>
-    <script src="europe.js"></script>
-    <script src="africa.js"></script>
-    <script src="asia.js"></script>
-    <script src="oceania.js"></script>
-
-    <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
-    <script src="https://cdn.amcharts.com/lib/5/map.js"></script>
-    <script src="https://cdn.amcharts.com/lib/5/geodata/worldLow.js"></script>
 </head>
 <body>
 
-    <div id="chartdiv"></div>
+    <div id="city-tooltip">City</div>
+    <div id="map-stage"></div>
 
     <div id="ui-layer">
         <div id="top-hud">
-            <div class="hud-item">
-                <span class="hud-label">Score</span>
+            <div class="hud-group">
+                <span class="hud-item">Target</span>
+                <span id="target-state" class="hud-val">--</span>
+            </div>
+            <div class="hud-group">
+                <span class="hud-item">Score</span>
                 <span id="score-val" class="hud-val">0</span>
             </div>
-            <div class="hud-item" onclick="toggleMode()">
-                <span class="hud-label">Mode</span>
-                <button id="mode-btn" class="toggle-btn active">Capital</button>
+            <div class="hud-group toggle-container active" id="mode-toggle" onclick="toggleMode()">
+                <span class="hud-item" id="mode-label">Capital</span>
+                <div class="toggle-switch"><div class="toggle-knob"></div></div>
             </div>
         </div>
         <div id="prompt-container">
-            <h1 id="main-prompt">System Initializing...</h1>
+            <p id="find-label">Initializing System...</p>
+            <h1 id="main-prompt">South America Quiz</h1>
             <div id="sub-prompt"></div>
         </div>
     </div>
 
     <div id="fact-overlay">
         <div class="fact-card">
-            <h2 class="fact-title" id="fact-city">City</h2>
-            <p class="fact-text" id="fact-desc">Description</p>
-            <button class="next-btn" onclick="nextRound()">Next Country</button>
+            <div class="fact-status" id="fact-status">Result</div>
+            <div class="fact-city" id="fact-city-name">City</div>
+            <div class="fact-body" id="fact-text">Fact</div>
+            <button class="next-btn" id="next-action-btn">Continue</button>
         </div>
     </div>
 
     <script>
-        const iso3to2 = {
-            "AFG":"AF","AGO":"AO","ALB":"AL","ARE":"AE","ARG":"AR","ARM":"AM","ATG":"AG","AUS":"AU","AUT":"AT","AZE":"AZ","BDI":"BI","BEL":"BE","BEN":"BJ","BFA":"BF","BGD":"BD","BGR":"BG","BHR":"BH","BHS":"BS","BIH":"BA","BLR":"BY","BLZ":"BZ","BOL":"BO","BRA":"BR","BRB":"BB","BRN":"BN","BTN":"BT","BWA":"BW","CAF":"CF","CAN":"CA","CHE":"CH","CHL":"CL","CHN":"CN","CIV":"CI","CMR":"CM","COD":"CD","COG":"CG","COL":"CO","COM":"KM","CPV":"CV","CRI":"CR","CUB":"CU","CYP":"CY","CZE":"CZ","DEU":"DE","DJI":"DJ","DMA":"DM","DNK":"DK","DOM":"DO","DZA":"DZ","ECU":"EC","EGY":"EG","ERI":"ER","ESP":"ES","EST":"EE","ETH":"ET","FIN":"FI","FJI":"FJ","FRA":"FR","FSM":"FM","GAB":"GA","GBR":"GB","GEO":"GE","GHA":"GH","GIN":"GN","GMB":"GM","GNB":"GW","GNQ":"GQ","GRC":"GR","GRD":"GD","GTM":"GT","GUY":"GY","HND":"HN","HRV":"HR","HTI":"HT","HUN":"HU","IDN":"ID","IND":"IN","IRL":"IE","IRN":"IR","IRQ":"IQ","ISL":"IS","ISR":"IL","ITA":"IT","JAM":"JM","JOR":"JO","JPN":"JP","KAZ":"KZ","KEN":"KE","KGZ":"KG","KHM":"KH","KIR":"KI","KNA":"KN","KOR":"KR","KWT":"KW","LAO":"LA","LBN":"LB","LBR":"LR","LBY":"LY","LCA":"LC","LIE":"LI","LKA":"LK","LSO":"LS","LTU":"LT","LUX":"LU","LVA":"LV","MAR":"MA","MCO":"MC","MDA":"MD","MDG":"MG","MDV":"MV","MEX":"MX","MHL":"MH","MKD":"MK","MLI":"ML","MLT":"MT","MMR":"MM","MNE":"ME","MNG":"MN","MOZ":"MZ","MRT":"MR","MUS":"MU","MWI":"MW","MYS":"MY","NAM":"NA","NER":"NE","NGA":"NG","NIC":"NI","NLD":"NL","NOR":"NO","NPL":"NP","NRU":"NR","NZL":"NZ","OMN":"OM","PAK":"PK","PAN":"PA","PER":"PE","PHL":"PH","PLW":"PW","PNG":"PG","POL":"PL","PRK":"KP","PRT":"PT","PRY":"PY","PSE":"PS","QAT":"QA","ROU":"RO","RUS":"RU","RWA":"RW","SAU":"SA","SDN":"SD","SEN":"SN","SGP":"SG","SLB":"SB","SLE":"SL","SLV":"SV","SMR":"SM","SOM":"SO","SRB":"RS","SSD":"SS","STP":"ST","SUR":"SR","SVK":"SK","SVN":"SI","SWE":"SE","SWZ":"SZ","SYC":"SC","SYR":"SY","TCD":"TD","TGO":"TG","THA":"TH","TJK":"TJ","TKM":"TM","TLS":"TL","TON":"TO","TTO":"TT","TUN":"TN","TUR":"TR","TUV":"TV","TWN":"TW","TZA":"TZ","UGA":"UG","UKR":"UA","URY":"UY","USA":"US","UZB":"UZ","VAT":"VA","VCT":"VC","VEN":"VE","VNM":"VN","VUT":"VU","WSM":"WS","YEM":"YE","ZAF":"ZA","ZMB":"ZM","ZWE":"ZW"
+        // --- DATASET ---
+        const gameData = {
+            "ARG": { "name": "Argentina", "region": "southeast", "capital": "Buenos Aires", "cities": { "Buenos Aires": [-58.38, -34.60], "Córdoba": [-64.18, -31.41], "Rosario": [-60.63, -32.94] }, "facts": { "Buenos Aires": "Known as the 'Paris of South America'.", "Córdoba": "Home to the oldest university in the country.", "Rosario": "The birthplace of Che Guevara and Lionel Messi." }},
+            "BRA": { "name": "Brazil", "region": "midwest", "capital": "Brasília", "cities": { "Brasília": [-47.88, -15.79], "Rio de Janeiro": [-43.17, -22.90], "São Paulo": [-46.63, -23.55] }, "facts": { "Brasília": "A planned city built in the shape of an airplane.", "Rio de Janeiro": "Famous for its Carnival and Christ the Redeemer statue.", "São Paulo": "The largest city in South America by population." }},
+            "CHL": { "name": "Chile", "region": "western", "capital": "Santiago", "cities": { "Santiago": [-70.64, -33.44], "Valparaíso": [-71.61, -33.04] }, "facts": { "Santiago": "Surrounded by the Andes, visible from almost anywhere in the city.", "Valparaíso": "A coastal city known for its colorful hills and funiculars." }},
+            "COL": { "name": "Colombia", "region": "northeast", "capital": "Bogotá", "cities": { "Bogotá": [-74.07, 4.71], "Medellín": [-75.56, 6.24] }, "facts": { "Bogotá": "Situated at an average of 2,640 meters above sea level.", "Medellín": "Transformed from 'most dangerous' to an award-winning innovative hub." }},
+            "PER": { "name": "Peru", "region": "western", "capital": "Lima", "cities": { "Lima": [-77.04, -12.04], "Cusco": [-71.96, -13.53] }, "facts": { "Lima": "Known as the Gastronomy Capital of the world.", "Cusco": "The former capital of the Inca Empire." }},
+            "VEN": { "name": "Venezuela", "region": "northeast", "capital": "Caracas", "cities": { "Caracas": [-66.90, 10.48], "Maracaibo": [-71.64, 10.64] }, "facts": { "Caracas": "Nestled in a valley separated from the Caribbean by the El Ávila mountain.", "Maracaibo": "Located near the bridge over Lake Maracaibo, one of the world's longest." }},
+            "BOL": { "name": "Bolivia", "region": "western", "capital": "La Paz", "cities": { "La Paz": [-68.11, -16.48], "Sucre": [-65.25, -19.03] }, "facts": { "La Paz": "The highest administrative capital in the world.", "Sucre": "The constitutional capital, known as the 'White City'." }},
+            "ECU": { "name": "Ecuador", "region": "western", "capital": "Quito", "cities": { "Quito": [-78.46, -0.18], "Guayaquil": [-79.90, -2.18] }, "facts": { "Quito": "The first city ever to be named a UNESCO World Heritage site.", "Guayaquil": "The nation's main port and largest city." }},
+            "PRY": { "name": "Paraguay", "region": "midwest", "capital": "Asunción", "cities": { "Asunción": [-57.57, -25.26] }, "facts": { "Asunción": "One of the oldest cities in South America, founded in 1537." }},
+            "URY": { "name": "Uruguay", "region": "southeast", "capital": "Montevideo", "cities": { "Montevideo": [-56.16, -34.90] }, "facts": { "Montevideo": "Consistently ranked as having the highest quality of life in Latin America." }},
+            "GUY": { "name": "Guyana", "region": "northeast", "capital": "Georgetown", "cities": { "Georgetown": [-58.15, 6.80] }, "facts": { "Georgetown": "Known for its unique wooden colonial architecture." }},
+            "SUR": { "name": "Suriname", "region": "northeast", "capital": "Paramaribo", "cities": { "Paramaribo": [-55.20, 5.85] }, "facts": { "Paramaribo": "Known for its diverse mix of Dutch and local architecture." }}
         };
 
-        const regionColors = {
-            "north_america": 0x4facfe,
-            "south_america": 0xff5e62,
-            "europe": 0x43e97b,
-            "africa": 0xfa709a, 
-            "asia": 0xf09819, 
-            "oceania": 0xa18cd1
-        };
+        // --- GAME ENGINE ---
+        let svg, g, zoom, projection, path;
+        let width, height, currentScale = 1;
+        let currentTargetISO = "", currentPhase = "MAP_SELECTION", targetCityName = "";
+        let score = 0, isCapitalMode = true, visited = new Set();
 
-        let root, chart, polygonSeries, pointSeries;
-        let currentTargetISO = null;
-        let currentPhase = "MAP"; 
-        let score = 0;
-        let visited = new Set();
-        let isCapitalMode = true;
-        let targetCityName = "";
+        window.onload = init;
 
-        am5.ready(function() {
-            root = am5.Root.new("chartdiv");
-            root.setThemes([ am5.Theme.new(root) ]);
-
-            // PERFORMANCE FIX: Use 'translateX' instead of 'rotateX'
-            // This is 10x faster as it doesn't recalculate projection on drag
-            chart = root.container.children.push(am5map.MapChart.new(root, {
-                panX: "translateX", // FIXED: Smooth panning
-                panY: "translateY", // FIXED: Allow vertical pan
-                projection: am5map.geoMercator(),
-                layout: root.horizontalLayout,
-                minZoomLevel: 1,
-                maxZoomLevel: 32, // Reasonable zoom limit
-                wheelSensitivity: 0.7 // Smoother wheel zoom
-            }));
-
-            // Create Polygon Series
-            polygonSeries = chart.series.push(am5map.MapPolygonSeries.new(root, {
-                geoJSON: am5geodata_worldLow,
-                exclude: ["AQ"], 
-                valueField: "value",
-                calculateAggregates: true
-            }));
-
-            let mapData = [];
-            Object.entries(gameData).forEach(([iso3, data]) => {
-                const iso2 = iso3to2[iso3];
-                if (iso2) {
-                    mapData.push({
-                        id: iso2,
-                        fill: am5.color(regionColors[data.region]), 
-                        originalISO: iso3
-                    });
-                }
-            });
-
-            polygonSeries.data.setAll(mapData);
-
-            polygonSeries.mapPolygons.template.setAll({
-                tooltipText: "{name}",
-                toggleKey: "active",
-                interactive: true,
-                stroke: am5.color(0xffffff),
-                strokeWidth: 0.5,
-                strokeOpacity: 0.2,
-                templateField: "polygonSettings" 
-            });
-
-            polygonSeries.mapPolygons.template.adapters.add("fill", function(fill, target) {
-                if (target.dataItem.dataContext && target.dataItem.dataContext.fill) {
-                    return target.dataItem.dataContext.fill;
-                }
-                return am5.color(0x222222); 
-            });
-
-            polygonSeries.mapPolygons.template.states.create("hover", {
-                stroke: am5.color(0xffffff),
-                strokeOpacity: 1,
-                strokeWidth: 1.5
-            });
-
-            polygonSeries.mapPolygons.template.events.on("click", function(ev) {
-                handleCountryClick(ev.target);
-            });
-
-            // Point Series for Cities
-            pointSeries = chart.series.push(am5map.MapPointSeries.new(root, {}));
+        async function init() {
+            width = window.innerWidth;
+            height = window.innerHeight;
             
-            // Kept the larger dot size as requested in previous turn
-            pointSeries.bullets.push(function() {
-                return am5.Bullet.new(root, {
-                    sprite: am5.Circle.new(root, {
-                        radius: 6, 
-                        fill: am5.color(0x00f3ff),
-                        stroke: am5.color(0xffffff),
-                        strokeWidth: 1, 
-                        tooltipText: "{title}",
-                        cursorOverStyle: "pointer"
-                    })
-                });
+            svg = d3.select("#map-stage").append("svg")
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .attr("preserveAspectRatio", "xMidYMid meet");
+            
+            g = svg.append("g");
+
+            zoom = d3.zoom().scaleExtent([1, 15]).on("zoom", (e) => {
+                g.attr("transform", e.transform);
+                currentScale = e.transform.k;
+                d3.selectAll(".city-node").attr("r", 6 / currentScale).attr("stroke-width", 2/currentScale);
             });
+            svg.call(zoom);
 
-            startGame();
-        });
+            try {
+                // Fetch World Atlas (ISO-3 codes are in properties.iso_a3 or id)
+                const world = await d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json");
+                const countries = topojson.feature(world, world.objects.countries).features;
+                
+                // Filter for SA countries
+                const saFeatures = countries.filter(d => gameData[d.id] || d.properties.name === "French Guiana");
 
-        function startGame() {
-            const keys = Object.keys(gameData);
-            const available = keys.filter(k => !visited.has(k));
+                projection = d3.geoMercator().fitSize([width, height * 0.8], { type: "FeatureCollection", features: saFeatures });
+                path = d3.geoPath().projection(projection);
 
-            if (available.length === 0) {
-                alert("Tour Complete! Score: " + score);
-                visited.clear();
-                score = 0;
+                g.selectAll("path")
+                    .data(saFeatures)
+                    .enter().append("path")
+                    .attr("d", path)
+                    .attr("class", d => {
+                        const data = gameData[d.id];
+                        return data ? `state reg-${data.region}` : "state reg-unknown";
+                    })
+                    .attr("id", d => `state-${d.id}`)
+                    .on("click", handleStateClick);
+
+                startRound();
+            } catch (err) { console.error(err); }
+        }
+
+        function startRound() {
+            const available = Object.keys(gameData).filter(k => !visited.has(k));
+            if (available.length === 0) { 
+                alert(`Game Over! Final Score: ${score}`); 
+                visited.clear(); score = 0; updateScoreUI();
             }
 
             currentTargetISO = available[Math.floor(Math.random() * available.length)];
             visited.add(currentTargetISO);
-            currentPhase = "MAP";
             
-            chart.goHome(); 
-            pointSeries.data.setAll([]); 
-            document.getElementById('fact-overlay').classList.remove('show');
-            
-            document.getElementById('main-prompt').innerText = gameData[currentTargetISO].name;
-            document.getElementById('sub-prompt').innerText = "Find this country";
-            document.getElementById('score-val').innerText = score;
+            currentPhase = "MAP_SELECTION";
+            resetZoom();
+            d3.selectAll(".state").classed("active-focused", false);
+            d3.selectAll(".city-node").remove();
+            document.getElementById("fact-overlay").classList.remove("show");
+
+            document.getElementById("find-label").innerText = "Identify Country";
+            document.getElementById("main-prompt").innerText = gameData[currentTargetISO].name;
+            document.getElementById("target-state").innerText = currentTargetISO;
+            document.getElementById("sub-prompt").innerText = "";
         }
 
-        function handleCountryClick(target) {
-            if (currentPhase !== "MAP") return;
+        function handleStateClick(event, d) {
+            if (currentPhase !== "MAP_SELECTION") return;
+            const clickedISO = d.id;
 
-            const clickedISO3 = target.dataItem.dataContext.originalISO;
-
-            if (clickedISO3 === currentTargetISO) {
-                score += 10;
-                flashMessage("Correct!", "#00ff9d");
-                transitionToCity(target, clickedISO3);
+            if (clickedISO === currentTargetISO) {
+                score += 10; updateScoreUI();
+                flashState(this, "correct");
+                transitionToCityPhase(d, clickedISO);
             } else {
-                score -= 5;
-                const clickedName = target.dataItem.dataContext.name || "Unknown";
-                flashMessage(`Wrong!`, "#ff0055");
+                score -= 5; updateScoreUI();
+                flashState(this, "wrong");
+                const wrongName = gameData[clickedISO] ? gameData[clickedISO].name : "Unknown Territory";
+                document.getElementById("sub-prompt").innerText = `That's ${wrongName}. Try again!`;
             }
-            document.getElementById('score-val').innerText = score;
         }
 
-        function transitionToCity(polygon, iso) {
-            currentPhase = "CITY";
+        function transitionToCityPhase(geoData, iso) {
+            currentPhase = "CITY_SELECTION";
             const data = gameData[iso];
+            zoomToFeature(geoData);
+            d3.select(`#state-${iso}`).classed("active-focused", true);
             
-            polygonSeries.zoomToDataItem(polygon.dataItem);
-
+            document.getElementById("find-label").innerText = "Locate City";
             if (isCapitalMode) {
                 targetCityName = data.capital;
-                document.getElementById('main-prompt').innerText = `Find Capital: ${data.capital}`;
-                document.getElementById('sub-prompt').innerText = data.name;
+                document.getElementById("main-prompt").innerText = `Capital: ${targetCityName}`;
             } else {
                 const cities = Object.keys(data.cities);
                 targetCityName = cities[Math.floor(Math.random() * cities.length)];
-                document.getElementById('main-prompt').innerText = "Find the city matching this fact:";
-                document.getElementById('sub-prompt').innerText = `"${data.facts[targetCityName]}"`;
+                document.getElementById("main-prompt").innerText = "Find the City";
+                document.getElementById("sub-prompt").innerText = data.facts[targetCityName];
             }
+            
+            plotCities(iso);
+        }
 
-            let cityData = [];
-            Object.entries(data.cities).forEach(([city, coords]) => {
-                cityData.push({
-                    geometry: { type: "Point", coordinates: [coords[0], coords[1]] },
-                    title: city,
-                    iso: iso 
-                });
+        function plotCities(iso) {
+            const cities = gameData[iso].cities;
+            const nodes = Object.entries(cities).map(([name, coords]) => {
+                const pos = projection(coords);
+                return { name, x: pos[0], y: pos[1] };
             });
-            pointSeries.data.setAll(cityData);
 
-            pointSeries.bullets.clear();
-            pointSeries.bullets.push(function() {
-                let circle = am5.Circle.new(root, {
-                    radius: 6, // Radius size requested
-                    fill: am5.color(0x00f3ff),
-                    stroke: am5.color(0xffffff),
-                    strokeWidth: 1,
-                    tooltipText: "{title}",
-                    cursorOverStyle: "pointer"
-                });
-
-                circle.events.on("click", function(ev) {
-                    let city = ev.target.dataItem.dataContext.title;
-                    handleCityClick(city, iso);
-                });
-
-                return am5.Bullet.new(root, { sprite: circle });
-            });
+            g.selectAll(".city-node").data(nodes).enter().append("circle")
+                .attr("class", "city-node")
+                .attr("cx", d => d.x).attr("cy", d => d.y)
+                .attr("r", 0)
+                .on("mouseover", (e, d) => {
+                    const tt = document.getElementById("city-tooltip");
+                    tt.innerText = d.name; tt.style.opacity = 1;
+                    tt.style.left = e.pageX + "px"; tt.style.top = e.pageY + "px";
+                })
+                .on("mouseout", () => document.getElementById("city-tooltip").style.opacity = 0)
+                .on("click", (e, d) => {
+                    if (d.name === targetCityName) {
+                        score += 20; updateScoreUI();
+                        showFact(d.name, iso, "EXCELLENT", "status-correct");
+                    } else {
+                        score -= 10; updateScoreUI();
+                        showFact(d.name, iso, "INCORRECT", "status-wrong");
+                    }
+                })
+                .transition().duration(500).attr("r", 6 / currentScale)
+                .style("pointer-events", "auto");
         }
 
-        function handleCityClick(city, iso) {
-            const data = gameData[iso];
-            if (city === targetCityName) {
-                score += 20;
-                showFactOverlay(city, data.facts[city]);
-            } else {
-                score -= 10;
-                flashMessage("Wrong City!", "#ff0055");
-            }
-            document.getElementById('score-val').innerText = score;
-        }
-
-        function showFactOverlay(city, fact) {
-            document.getElementById('fact-city').innerText = city;
-            document.getElementById('fact-desc').innerText = fact;
-            document.getElementById('fact-overlay').classList.add('show');
-        }
-
-        function nextRound() {
-            startGame();
+        function showFact(cityName, iso, status, cssClass) {
+            const overlay = document.getElementById("fact-overlay");
+            document.getElementById("fact-status").innerText = status;
+            document.getElementById("fact-status").className = `fact-status ${cssClass}`;
+            document.getElementById("fact-city-name").innerText = cityName;
+            document.getElementById("fact-text").innerText = gameData[iso].facts[cityName] || "No data available for this location.";
+            
+            const btn = document.getElementById("next-action-btn");
+            btn.onclick = () => { overlay.classList.remove("show"); startRound(); };
+            overlay.classList.add("show");
         }
 
         function toggleMode() {
-            if (currentPhase !== "MAP") return;
+            if (currentPhase === "CITY_SELECTION") return;
             isCapitalMode = !isCapitalMode;
-            const btn = document.getElementById('mode-btn');
-            btn.innerText = isCapitalMode ? "Capital" : "Fact";
-            btn.classList.toggle('active');
+            document.getElementById("mode-toggle").classList.toggle("active");
+            document.getElementById("mode-label").innerText = isCapitalMode ? "Capital" : "Fact";
         }
 
-        function flashMessage(text, color) {
-            const sub = document.getElementById('sub-prompt');
-            const original = sub.innerText;
-            sub.innerText = text;
-            sub.style.color = color;
-            setTimeout(() => {
-                sub.innerText = original;
-                sub.style.color = "#00f3ff";
-            }, 1500);
+        function updateScoreUI() { document.getElementById("score-val").innerText = score; }
+        function flashState(el, type) { d3.select(el).classed(type+"-flash", true); setTimeout(() => d3.select(el).classed(type+"-flash", false), 500); }
+        function resetZoom() { svg.transition().duration(1000).call(zoom.transform, d3.zoomIdentity); }
+        function zoomToFeature(d) {
+            const bounds = path.bounds(d);
+            const dx = bounds[1][0] - bounds[0][0], dy = bounds[1][1] - bounds[0][1];
+            const x = (bounds[0][0] + bounds[1][0]) / 2, y = (bounds[0][1] + bounds[1][1]) / 2;
+            const scale = Math.max(1, Math.min(10, 0.7 / Math.max(dx / width, dy / height)));
+            const translate = [width / 2 - scale * x, height / 2 - scale * y];
+            svg.transition().duration(1000).call(zoom.transform, d3.zoomIdentity.translate(translate[0], translate[1]).scale(scale));
         }
     </script>
 </body>
