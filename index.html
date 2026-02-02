@@ -3,119 +3,150 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>South America ISO Quiz</title>
+    <title>South America Map Quiz (Offline Fixed)</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    
     <style>
-        :root {
-            --bg: #050505;
-            --neon-blue: #00f3ff;
-            --neon-green: #00ff9d;
-            --glass: rgba(20, 20, 25, 0.9);
-        }
-        body { margin: 0; background: var(--bg); color: white; font-family: sans-serif; overflow: hidden; }
-        #map-stage { width: 100vw; height: 100vh; }
-        .country { fill: #222; stroke: #444; stroke-width: 1px; transition: 0.3s; cursor: pointer; }
-        .country:hover { fill: #333; stroke: #888; }
-        .correct { fill: var(--neon-green) !important; opacity: 0.6; }
-        .wrong { fill: #ff0055 !important; }
+        body { margin: 0; background-color: #050505; color: white; font-family: sans-serif; overflow: hidden; }
         
-        #ui { position: absolute; top: 20px; width: 100%; text-align: center; pointer-events: none; }
-        .hud { background: var(--glass); display: inline-flex; gap: 20px; padding: 10px 30px; border-radius: 50px; pointer-events: auto; border: 1px solid #333; }
-        #prompt { font-size: 2rem; font-weight: 900; margin-top: 20px; text-transform: uppercase; letter-spacing: 2px; }
-        #sub { color: var(--neon-blue); margin-top: 5px; font-weight: bold; }
-        .stat { display: flex; flex-direction: column; align-items: center; }
-        .label { font-size: 0.7rem; opacity: 0.5; text-transform: uppercase; }
-        .val { font-size: 1.2rem; font-weight: bold; color: var(--neon-blue); }
+        /* The Map Stage */
+        #map-stage { 
+            width: 100vw; 
+            height: 100vh; 
+            /* Red border helps you see if the div exists. Remove later if you want. */
+            border: 1px solid #333; 
+        }
+
+        /* Country Styling */
+        .country { 
+            fill: #1a1a1a; 
+            stroke: #444; 
+            stroke-width: 1px; 
+            cursor: pointer; 
+            transition: all 0.2s ease;
+        }
+        .country:hover { fill: #333; stroke: #fff; }
+        
+        /* Quiz Feedback States */
+        .correct { fill: #00ff9d !important; transition: fill 0.1s; }
+        .wrong { fill: #ff0055 !important; transition: fill 0.1s; }
+
+        /* UI Styling */
+        #ui-layer { position: absolute; top: 20px; width: 100%; pointer-events: none; display: flex; flex-direction: column; align-items: center; }
+        .hud-panel { pointer-events: auto; background: rgba(30,30,30,0.9); padding: 15px 30px; border-radius: 30px; border: 1px solid #555; text-align: center; }
+        .label { font-size: 0.8rem; color: #888; letter-spacing: 2px; text-transform: uppercase; }
+        .main-text { font-size: 2rem; font-weight: 900; color: white; margin: 5px 0; }
+        .sub-text { color: #00f3ff; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div id="ui">
-    <div class="hud">
-        <div class="stat"><span class="label">Target</span><span id="iso-display" class="val">--</span></div>
-        <div class="stat"><span class="label">Score</span><span id="score-display" class="val">0</span></div>
+    <div id="ui-layer">
+        <div class="hud-panel">
+            <div class="label">Find Country</div>
+            <div id="target-display" class="main-text">Loading...</div>
+            <div id="score-display" class="sub-text">Score: 0</div>
+        </div>
     </div>
-    <div id="prompt">Loading...</div>
-    <div id="sub">Click the correct country</div>
-</div>
 
-<div id="map-stage"></div>
+    <div id="map-stage"></div>
 
-<script>
-// Minimalist South America Geometry (Simplified for zero-fetch loading)
-const saGeo = {
-    type: "FeatureCollection",
-    features: [
-        { id: "ARG", properties: { name: "Argentina" }, geometry: { type: "Polygon", coordinates: [[[-65,-22],[-55,-30],[-58,-34],[-60,-50],[-70,-55],[-73,-40],[-65,-22]]] } },
-        { id: "BRA", properties: { name: "Brazil" }, geometry: { type: "Polygon", coordinates: [[[-50,-2],[-35,-5],[-35,-15],[-50,-30],[-58,-20],[-70,-10],[-70,5],[-50,-2]]] } },
-        { id: "CHL", properties: { name: "Chile" }, geometry: { type: "Polygon", coordinates: [[[-70,-18],[-68,-25],[-75,-55],[-70,-55],[-68,-20],[-70,-18]]] } },
-        { id: "COL", properties: { name: "Colombia" }, geometry: { type: "Polygon", coordinates: [[[-75,12],[-70,5],[-70,0],[-78,2],[-75,12]]] } },
-        { id: "PER", properties: { name: "Peru" }, geometry: { type: "Polygon", coordinates: [[[-80,-5],[-75,-15],[-70,-18],[-70,-10],[-80,-5]]] } },
-        { id: "BOL", properties: { name: "Bolivia" }, geometry: { type: "Polygon", coordinates: [[[-70,-18],[-60,-20],[-58,-15],[-65,-10],[-70,-18]]] } },
-        { id: "VEN", properties: { name: "Venezuela" }, geometry: { type: "Polygon", coordinates: [[[-72,11],[-60,10],[-60,2],[-67,2],[-72,11]]] } },
-        { id: "PRY", properties: { name: "Paraguay" }, geometry: { type: "Polygon", coordinates: [[[-62,-20],[-55,-25],[-58,-30],[-62,-20]]] } },
-        { id: "URY", properties: { name: "Uruguay" }, geometry: { type: "Polygon", coordinates: [[[-58,-34],[-53,-33],[-55,-30],[-58,-34]]] } },
-        { id: "ECU", properties: { name: "Ecuador" }, geometry: { type: "Polygon", coordinates: [[[-80,-2],[-75,-2],[-78,2],[-80,-2]]] } },
-        { id: "GUY", properties: { name: "Guyana" }, geometry: { type: "Polygon", coordinates: [[[-60,8],[-57,6],[-58,2],[-60,2],[-60,8]]] } },
-        { id: "SUR", properties: { name: "Suriname" }, geometry: { type: "Polygon", coordinates: [[[-57,6],[-54,6],[-55,2],[-57,2],[-57,6]]] } }
-    ]
-};
+    <script>
+        // --- 1. EMBEDDED MAP DATA (Fixed Structure) ---
+        // These are simplified polygon shapes for South America.
+        // NOTE: Coordinates are [[[x,y], [x,y]]] (Triple nested)
+        const southAmericaGeoJSON = {
+            "type": "FeatureCollection",
+            "features": [
+                { "id": "ARG", "properties": { "name": "Argentina" }, "geometry": { "type": "Polygon", "coordinates": [[ [-68,-55], [-73,-50], [-70,-30], [-65,-22], [-55,-26], [-57,-35], [-68,-55] ]] } },
+                { "id": "BOL", "properties": { "name": "Bolivia" }, "geometry": { "type": "Polygon", "coordinates": [[ [-69,-17], [-65,-10], [-60,-13], [-58,-20], [-62,-22], [-69,-23], [-69,-17] ]] } },
+                { "id": "BRA", "properties": { "name": "Brazil" }, "geometry": { "type": "Polygon", "coordinates": [[ [-53,-33], [-58,-30], [-58,-20], [-70,-10], [-70,-5], [-65,0], [-50,2], [-35,-5], [-39,-18], [-53,-33] ]] } },
+                { "id": "CHL", "properties": { "name": "Chile" }, "geometry": { "type": "Polygon", "coordinates": [[ [-75,-55], [-70,-55], [-68,-22], [-70,-18], [-74,-18], [-75,-55] ]] } },
+                { "id": "COL", "properties": { "name": "Colombia" }, "geometry": { "type": "Polygon", "coordinates": [[ [-79,2], [-77,8], [-72,12], [-67,6], [-67,1], [-70,-4], [-79,2] ]] } },
+                { "id": "ECU", "properties": { "name": "Ecuador" }, "geometry": { "type": "Polygon", "coordinates": [[ [-81,-3], [-78,1], [-75,-1], [-80,-5], [-81,-3] ]] } },
+                { "id": "GUY", "properties": { "name": "Guyana" }, "geometry": { "type": "Polygon", "coordinates": [[ [-61,8], [-57,6], [-58,1], [-61,4], [-61,8] ]] } },
+                { "id": "PRY", "properties": { "name": "Paraguay" }, "geometry": { "type": "Polygon", "coordinates": [[ [-62,-22], [-55,-22], [-55,-27], [-58,-27], [-62,-22] ]] } },
+                { "id": "PER", "properties": { "name": "Peru" }, "geometry": { "type": "Polygon", "coordinates": [[ [-81,-5], [-70,-3], [-69,-15], [-70,-18], [-75,-15], [-81,-5] ]] } },
+                { "id": "SUR", "properties": { "name": "Suriname" }, "geometry": { "type": "Polygon", "coordinates": [[ [-57,6], [-54,6], [-54,2], [-57,2], [-57,6] ]] } },
+                { "id": "URY", "properties": { "name": "Uruguay" }, "geometry": { "type": "Polygon", "coordinates": [[ [-58,-34], [-53,-32], [-53,-35], [-58,-34] ]] } },
+                { "id": "VEN", "properties": { "name": "Venezuela" }, "geometry": { "type": "Polygon", "coordinates": [[ [-73,12], [-60,10], [-60,4], [-67,1], [-73,12] ]] } }
+            ]
+        };
 
-const countries = ["ARG", "BRA", "CHL", "COL", "PER", "BOL", "VEN", "PRY", "URY", "ECU", "GUY", "SUR"];
-let target = "";
-let score = 0;
+        // --- 2. GAME LOGIC ---
+        let score = 0;
+        let targetISO = "";
+        
+        // Setup SVG
+        const container = document.getElementById("map-stage");
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+        
+        const svg = d3.select("#map-stage").append("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .attr("viewBox", `0 0 ${width} ${height}`);
 
-const width = window.innerWidth;
-const height = window.innerHeight;
+        // Define Projection (Auto-fits the data to the screen)
+        const projection = d3.geoMercator()
+            .fitSize([width, height], southAmericaGeoJSON);
+            
+        const pathGenerator = d3.geoPath().projection(projection);
 
-const svg = d3.select("#map-stage").append("svg")
-    .attr("width", width)
-    .attr("height", height);
+        // Draw Map
+        const g = svg.append("g");
+        
+        g.selectAll("path")
+            .data(southAmericaGeoJSON.features)
+            .enter()
+            .append("path")
+            .attr("d", pathGenerator)
+            .attr("class", "country")
+            .attr("id", d => d.id)
+            .on("click", handleInput);
 
-const projection = d3.geoMercator()
-    .center([-60, -25])
-    .scale(width / 2.5)
-    .translate([width / 2, height / 2]);
+        // Start Game
+        pickNewTarget();
 
-const path = d3.geoPath().projection(projection);
+        function pickNewTarget() {
+            const features = southAmericaGeoJSON.features;
+            const random = features[Math.floor(Math.random() * features.length)];
+            targetISO = random.id;
+            
+            // UI Update
+            document.getElementById("target-display").innerText = random.properties.name;
+            
+            // Clear previous colors
+            d3.selectAll(".country").classed("correct", false).classed("wrong", false);
+        }
 
-function init() {
-    svg.selectAll("path")
-        .data(saGeo.features)
-        .enter().append("path")
-        .attr("d", path)
-        .attr("class", "country")
-        .attr("id", d => d.id)
-        .on("click", (e, d) => checkAnswer(d.id));
+        function handleInput(e, d) {
+            const clickedISO = d.id;
+            const el = d3.select(this);
 
-    newRound();
-}
+            if (clickedISO === targetISO) {
+                // Correct
+                score += 10;
+                el.classed("correct", true);
+                setTimeout(pickNewTarget, 600);
+            } else {
+                // Wrong
+                score -= 5;
+                el.classed("wrong", true);
+                setTimeout(() => el.classed("wrong", false), 400);
+            }
+            document.getElementById("score-display").innerText = "Score: " + score;
+        }
 
-function newRound() {
-    target = countries[Math.floor(Math.random() * countries.length)];
-    document.getElementById("prompt").innerText = saGeo.features.find(f => f.id === target).properties.name;
-    document.getElementById("iso-display").innerText = target;
-    d3.selectAll(".country").classed("wrong", false);
-}
+        // Handle Window Resize
+        window.addEventListener("resize", () => {
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            svg.attr("width", w).attr("height", h);
+            projection.fitSize([w, h], southAmericaGeoJSON);
+            g.selectAll("path").attr("d", pathGenerator);
+        });
 
-function checkAnswer(id) {
-    if (id === target) {
-        score += 10;
-        document.getElementById("score-display").innerText = score;
-        d3.select(`#${id}`).classed("correct", true);
-        setTimeout(() => {
-            d3.select(`#${id}`).classed("correct", false);
-            newRound();
-        }, 500);
-    } else {
-        score -= 5;
-        document.getElementById("score-display").innerText = score;
-        d3.select(`#${id}`).classed("wrong", true);
-        setTimeout(() => d3.select(`#${id}`).classed("wrong", false), 500);
-    }
-}
-
-init();
-</script>
+    </script>
 </body>
 </html>
