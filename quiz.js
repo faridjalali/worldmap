@@ -62,7 +62,7 @@ async function initGame() {
       throw new Error("No countries matched for this continent.");
     }
 
-    const filteredFeatures = features.filter(f => gameData[f.id]);
+    const filteredFeatures = features.filter(f => gameData[pad3(f.id)]);
 
     projection = d3.geoMercator().fitSize([width, height * 0.9], {
       type: "FeatureCollection",
@@ -75,7 +75,8 @@ async function initGame() {
       .enter().append("path")
       .attr("d", path)
       .attr("class", "state")
-      .attr("id", d => `state-${d.id}`)
+      .attr("id", d => `state-${pad3(d.id)}`)
+      .attr("data-continent", d => gameData[pad3(d.id)]?.continent || "")
       .on("click", handleStateClick);
 
     startRound();
@@ -89,7 +90,8 @@ async function initGame() {
 function buildGameData(features, byCcn3, continentParam) {
   const data = {};
   for (const f of features) {
-    const meta = byCcn3.get(f.id);
+    const idKey = pad3(f.id);
+    const meta = byCcn3.get(idKey);
     if (!meta) continue;
 
     const continent = resolveContinent(meta);
@@ -101,13 +103,14 @@ function buildGameData(features, byCcn3, continentParam) {
 
     const capitalCoord = getCapitalCoord(meta, f);
 
-    data[f.id] = {
-      id: f.id,
+    data[idKey] = {
+      id: idKey,
       name: meta.name?.common || meta.name?.official || meta.name,
       iso: meta.cca3 || meta.cioc || meta.cca2 || meta.ccn3,
       capital: capitalName,
       capitalCoord,
-      facts: buildFacts(meta)
+      facts: buildFacts(meta),
+      continent
     };
   }
   return data;
@@ -209,7 +212,7 @@ function startRound() {
 function handleStateClick(event, d) {
   if (currentPhase !== "MAP_SELECTION") return;
 
-  const clickedID = d.id;
+  const clickedID = pad3(d.id);
   if (!gameData[clickedID]) return;
 
   if (clickedID === currentTargetID) {
