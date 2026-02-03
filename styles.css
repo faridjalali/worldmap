@@ -440,7 +440,7 @@ body {
 /* Back Button */
 .back-btn {
   position: absolute;
-  top: 53px; /* visual center alignment with HUD */
+  top: 58px; /* visual center alignment with HUD */
   left: 40px;
   width: 44px;
   height: 44px;
@@ -522,7 +522,7 @@ body {
   .hud-val { font-size: 1rem; }
   
   .back-btn {
-    top: 33px; /* Adjusted for mobile HUD top: +10px from previous */
+    top: 38px; /* Adjusted for mobile HUD top: +15px from original */
     left: 10px;
     width: 36px;
     height: 36px;
