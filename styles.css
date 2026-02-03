@@ -137,17 +137,14 @@ body {
   0% {
     stroke-width: 0.5px;
     opacity: 0.2;
-    transform: scale(1);
   }
   50% {
     stroke-width: 1.5px;
     opacity: 0.6;
-    transform: scale(1.05);
   }
   100% {
     stroke-width: 0.5px;
     opacity: 0.2;
-    transform: scale(1);
   }
 }
 
