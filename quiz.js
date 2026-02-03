@@ -6,6 +6,9 @@ const SOURCES = {
   countries: [
     "https://cdn.jsdelivr.net/npm/world-countries@5.1.0/countries.json",
     "https://unpkg.com/world-countries@5.1.0/countries.json"
+  ],
+  cities: [
+    "./cities.json"
   ]
 };
 
@@ -15,9 +18,10 @@ let svg, g, zoom, projection, path;
 let width, height, currentScale = 1;
 let currentTargetID = "", currentPhase = "MAP_SELECTION";
 let score = 0, isCapitalMode = true, visited = new Set();
-let targetCapital = "";
+let targetCityName = "";
 let gameData = {};
 let features = [];
+let cityDB = {};
 
 const mapPadding = { top: 90, right: 40, bottom: 40, left: 40 };
 
@@ -58,6 +62,7 @@ async function initGame() {
   try {
     const topo = await fetchFirstOk(SOURCES.topo, "World Atlas");
     const countries = await fetchFirstOk(SOURCES.countries, "World Countries");
+    cityDB = await fetchFirstOk(SOURCES.cities, "Cities");
 
     const byCcn3 = new Map();
     for (const c of countries) {
@@ -68,10 +73,10 @@ async function initGame() {
     const world = topojson.feature(topo, topo.objects.countries);
     features = world.features;
 
-    gameData = buildGameData(features, byCcn3, continentParam);
+    gameData = buildGameData(features, byCcn3, continentParam, cityDB);
 
     if (Object.keys(gameData).length === 0) {
-      throw new Error("No countries matched for this continent.");
+      throw new Error("No countries matched for this continent with valid city data.");
     }
 
     const filteredFeatures = features.filter(f => gameData[pad3(f.id)]);
@@ -116,7 +121,7 @@ function getMapViewport() {
   };
 }
 
-function buildGameData(features, byCcn3, continentParam) {
+function buildGameData(features, byCcn3, continentParam, cityDB) {
   const data = {};
   for (const f of features) {
     const idKey = pad3(f.id);
@@ -130,19 +135,44 @@ function buildGameData(features, byCcn3, continentParam) {
     const capitalName = Array.isArray(meta.capital) ? meta.capital[0] : meta.capital;
     if (!capitalName) continue;
 
-    const capitalCoord = getCapitalCoord(meta, f);
+    const cities = getCitiesForCountry(idKey, capitalName, meta, f, cityDB);
+    if (cities.length < 3) continue;
 
     data[idKey] = {
       id: idKey,
       name: meta.name?.common || meta.name?.official || meta.name,
       iso: meta.cca3 || meta.cioc || meta.cca2 || meta.ccn3,
       capital: capitalName,
-      capitalCoord,
+      cities,
       facts: buildFacts(meta),
       continent
     };
   }
   return data;
+}
+
+function getCitiesForCountry(idKey, capitalName, meta, feature, cityDB) {
+  const entry = cityDB[idKey];
+  if (!entry || !Array.isArray(entry.cities)) return [];
+
+  const cities = entry.cities.slice(0, 6).map(c => ({
+    name: c.name,
+    latlng: c.latlng,
+    fact: c.fact || `${c.name} is one of the country’s major cities.`
+  }));
+
+  // Ensure capital is included
+  const hasCapital = cities.some(c => c.name.toLowerCase() === capitalName.toLowerCase());
+  if (!hasCapital) {
+    const capitalCoord = getCapitalCoord(meta, feature);
+    cities.unshift({
+      name: capitalName,
+      latlng: [capitalCoord[1], capitalCoord[0]],
+      fact: `${capitalName} is the national capital and political center.`
+    });
+  }
+
+  return cities.slice(0, 6);
 }
 
 function getCapitalCoord(meta, feature) {
@@ -275,7 +305,7 @@ function handleStateClick(event, d) {
   if (clickedID === currentTargetID) {
     score += 10; updateScoreUI();
     flashState(this, "correct");
-    transitionToCapitalPhase(d, clickedID);
+    transitionToCityPhase(d, clickedID);
   } else {
     score -= 10; updateScoreUI();
     flashState(this, "wrong");
@@ -285,39 +315,41 @@ function handleStateClick(event, d) {
   }
 }
 
-function transitionToCapitalPhase(geoData, id) {
+function transitionToCityPhase(geoData, id) {
   currentPhase = "CITY_SELECTION";
   zoomToState(geoData);
   d3.select(`#state-${id}`).classed("active-focused", true);
 
   const data = gameData[id];
-  document.getElementById("find-label").innerText = "Find Capital";
+  document.getElementById("find-label").innerText = "Find City";
   document.getElementById("sub-prompt").innerText = "";
 
-  targetCapital = data.capital;
+  const cityChoices = data.cities.slice(0, 3);
 
   if (isCapitalMode) {
-    document.getElementById("main-prompt").innerText = `Capital: ${targetCapital}`;
+    targetCityName = data.capital;
+    document.getElementById("main-prompt").innerText = `Capital: ${targetCityName}`;
   } else {
-    const fact = data.facts[Math.floor(Math.random() * data.facts.length)];
-    document.getElementById("main-prompt").innerText = "Identify Capital";
-    document.getElementById("sub-prompt").innerText = fact;
+    const target = cityChoices[Math.floor(Math.random() * cityChoices.length)];
+    targetCityName = target.name;
+    document.getElementById("main-prompt").innerText = "Identify City";
+    document.getElementById("sub-prompt").innerText = `"${target.fact}"`;
   }
 
-  plotCapital(id);
-  setTimeout(() => { d3.selectAll(".city-node").style("pointer-events", "auto"); }, 800);
+  plotCities(id, cityChoices);
+  setTimeout(() => { d3.selectAll(".city-node").style("pointer-events", "auto"); }, 600);
 }
 
-function plotCapital(id) {
-  const data = gameData[id];
-  const projected = projection(data.capitalCoord);
-  if (!projected) return;
+function plotCities(id, cityChoices) {
+  const nodes = cityChoices.map(c => {
+    const projected = projection([c.latlng[1], c.latlng[0]]);
+    return projected ? { name: c.name, x: projected[0], y: projected[1] } : null;
+  }).filter(Boolean);
 
-  const node = { name: data.capital, x: projected[0], y: projected[1] };
   const { r, stroke } = getDotStyle();
 
   g.selectAll(".city-node")
-    .data([node])
+    .data(nodes)
     .enter().append("circle")
     .attr("class", "city-node")
     .attr("cx", d => d.x)
@@ -327,13 +359,15 @@ function plotCapital(id) {
     .on("mouseover", showTooltip)
     .on("mousemove", moveTooltip)
     .on("mouseout", hideTooltip)
-    .on("click", (e, d) => handleCapitalClick(e, d, id))
-    .transition().duration(500).delay(400).attr("r", r);
+    .on("click", (e, d) => handleCityClick(e, d, id))
+    .transition().duration(400).delay(200).attr("r", r);
 }
 
-function handleCapitalClick(event, cityNode, id) {
-  const isCorrect = cityNode.name === targetCapital;
+function handleCityClick(event, cityNode, id) {
+  const isCorrect = cityNode.name === targetCityName;
   const dot = d3.select(event.currentTarget);
+
+  if (dot.classed("wrong-choice") || dot.classed("correct-choice")) return;
 
   if (isCorrect) {
     dot.classed("correct-choice", true);
@@ -342,7 +376,6 @@ function handleCapitalClick(event, cityNode, id) {
   } else {
     dot.classed("wrong-choice", true);
     score -= 10; updateScoreUI();
-    showFact(cityNode.name, id, "INCORRECT", "status-wrong");
   }
 }
 
@@ -351,14 +384,16 @@ function showFact(cityName, id, status, statusClass) {
   const overlay = document.getElementById("fact-overlay");
   const btn = document.getElementById("next-action-btn");
 
+  const cityFact = data.cities.find(c => c.name === cityName)?.fact;
+
   document.getElementById("fact-status").innerText = status;
   document.getElementById("fact-status").className = `fact-status ${statusClass}`;
   document.getElementById("fact-city-name").innerText = cityName;
   document.getElementById("fact-text").innerText =
-    isCapitalMode ? `Capital of ${data.name}` : data.facts[Math.floor(Math.random() * data.facts.length)];
+    isCapitalMode ? `Capital of ${data.name}` : cityFact || "Major city.";
 
-  btn.innerText = (status === "CORRECT") ? "Next Country" : "Close";
-  btn.onclick = (status === "CORRECT") ? resetGameRound : () => overlay.classList.remove("show");
+  btn.innerText = "Next Country";
+  btn.onclick = resetGameRound;
 
   overlay.classList.add("show");
 }
