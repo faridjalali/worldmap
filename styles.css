@@ -115,7 +115,6 @@ body {
 }
 
 /* Landing page */
-/* Landing page */
 .landing {
   overflow: hidden;
   background: radial-gradient(1200px 600px at 50% -10%, rgba(0,243,255,0.12), transparent 60%),
@@ -147,6 +146,41 @@ body {
   height: 100%;
 }
 
+.country {
+  fill: rgba(120, 180, 220, 0.22);
+  stroke: rgba(255, 255, 255, 0.15);
+  stroke-width: 0.5;
+  transition: fill 0.2s, opacity 0.2s, stroke 0.2s;
+}
+
+.country.dim { opacity: 0.15; }
+
+.country.highlight {
+  opacity: 1;
+  stroke: rgba(255,255,255,0.8);
+  stroke-width: 1.2;
+}
+
+.country.highlight[data-continent="north-america"] { fill: var(--c-na); }
+.country.highlight[data-continent="south-america"] { fill: var(--c-sa); }
+.country.highlight[data-continent="europe"] { fill: var(--c-eu); }
+.country.highlight[data-continent="africa"] { fill: var(--c-af); }
+.country.highlight[data-continent="asia"] { fill: var(--c-as); }
+.country.highlight[data-continent="oceania"] { fill: var(--c-oc); }
+
+.map-tooltip {
+  position: absolute;
+  background: #0b0b0b;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 10px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
 .world-btn {
   display: inline-block;
   background: var(--neon-blue);
@@ -165,15 +199,9 @@ body {
   right: 24px;
 }
 
-.map-tooltip {
-  position: absolute;
-  background: #0b0b0b;
-  border: 1px solid rgba(255,255,255,0.2);
-  color: white;
-  padding: 6px 10px;
-  font-size: 13px;
-  border-radius: 10px;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.15s ease;
+.map-error {
+  color: #ff8b8b;
+  text-align: center;
+  padding: 30px;
+  font-size: 1rem;
 }
