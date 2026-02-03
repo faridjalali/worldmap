@@ -40,6 +40,13 @@ body {
   fill: rgba(120, 180, 220, 0.4);
 }
 
+.state[data-continent="north-america"] { fill: var(--c-na); }
+.state[data-continent="south-america"] { fill: var(--c-sa); }
+.state[data-continent="europe"] { fill: var(--c-eu); }
+.state[data-continent="africa"] { fill: var(--c-af); }
+.state[data-continent="asia"] { fill: var(--c-as); }
+.state[data-continent="oceania"] { fill: var(--c-oc); }
+
 .state:hover { opacity: 0.8; stroke: rgba(255,255,255,0.6); stroke-width: 1px; }
 .state.active-focused { opacity: 1; stroke: #fff; stroke-width: 2px; }
 
