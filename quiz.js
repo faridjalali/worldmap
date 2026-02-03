@@ -248,7 +248,7 @@ function getDotStyle() {
   );
 
   return {
-    r: screenR / currentScale
+    r: (screenR / currentScale) * 2
   };
 }
 
@@ -325,12 +325,7 @@ function transitionToCityPhase(geoData, id) {
     document.getElementById("sub-prompt").innerText = `"${target.fact}"`;
   }
 
-  // Lock to Capital mode and disable toggle during city phase
-  if (!isCapitalMode) {
-    isCapitalMode = true;
-    document.getElementById("mode-toggle").classList.add("active");
-    document.getElementById("mode-label").innerText = "Capital";
-  }
+  // Lock toggle during city phase
   document.getElementById("mode-toggle").classList.add("disabled");
 
   plotCities(id, cityChoices);
