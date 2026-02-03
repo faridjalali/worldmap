@@ -260,10 +260,19 @@ body {
 
 #prompt-container {
   position: absolute;
-  top: 110px; /* Very tight fit (HUD bottom ~95px) */
+  top: 100px;
   width: 100%;
   text-align: center;
   text-shadow: 0 5px 25px black;
+}
+
+/* Force tighter desktop positioning explicitly */
+@media (min-width: 769px) {
+  #prompt-container {
+    top: 90px; /* Extremely tight to HUD (Bottom 90px) */
+    padding-top: 5px; /* Slight push to prevent text clipping */
+    z-index: 5;
+  }
 }
 #find-label {
   font-size: 1.2rem;
