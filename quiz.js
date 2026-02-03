@@ -380,10 +380,6 @@ function handleCityClick(event, cityNode, id) {
   }
 }
 
-function showFact(cityName, id, status, statusClass) {
-  const data = gameData[id];
-  const overlay = document.getElementById("fact-overlay");
-  const btn = document.getElementById("next-action-btn");
 
 function showFact(cityName, id, status, statusClass, factText, btnLabel = "Next Country", btnAction = null) {
   const data = gameData[id];
