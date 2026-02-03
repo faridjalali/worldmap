@@ -260,7 +260,7 @@ body {
 
 #prompt-container {
   position: absolute;
-  top: 20%;
+  top: max(20%, 140px); /* Responsive but never higher than 140px */
   width: 100%;
   text-align: center;
   text-shadow: 0 5px 25px black;
@@ -558,8 +558,5 @@ body {
      but since HUD is centered and back btn is absolute left, 
      we just need to check overlap. */
   
-  /* Prevent prompt from overlapping HUD on small screens */
-  #prompt-container {
-    top: 110px;
-  }
+
 }
