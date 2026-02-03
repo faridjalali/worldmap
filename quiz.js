@@ -326,11 +326,38 @@ function resetGameRound() { startRound(); }
 
 function zoomToState(d) {
   const b = path.bounds(d);
-  const dx = b[1][0] - b[0][0], dy = b[1][1] - b[0][1];
-  const x = (b[0][0] + b[1][0]) / 2, y = (b[0][0] + b[1][1]) / 2;
-  const s = Math.max(1, Math.min(10, 0.7 / Math.max(dx / width, dy / height)));
-  const t = [width / 2 - s * x, height / 2 - s * y];
-  svg.transition().duration(1000).call(zoom.transform, d3.zoomIdentity.translate(t[0], t[1]).scale(s));
+  const dx = b[1][0] - b[0][0];
+  const dy = b[1][1] - b[0][1];
+
+  const boundsValid =
+    Number.isFinite(dx) &&
+    Number.isFinite(dy) &&
+    dx > 0 && dy > 0 &&
+    dx < width * 3 &&
+    dy < height * 3;
+
+  if (boundsValid) {
+    const x = (b[0][0] + b[1][0]) / 2;
+    const y = (b[0][1] + b[1][1]) / 2;
+    const s = Math.max(1, Math.min(10, 0.75 / Math.max(dx / width, dy / height)));
+    const t = [width / 2 - s * x, height / 2 - s * y];
+    svg.transition().duration(900).call(
+      zoom.transform,
+      d3.zoomIdentity.translate(t[0], t[1]).scale(s)
+    );
+    return;
+  }
+
+  // Fallback for antimeridian-spanning or extreme geometries
+  const centroid = projection(d3.geoCentroid(d));
+  if (!centroid) return;
+
+  const s = 4;
+  const t = [width / 2 - s * centroid[0], height / 2 - s * centroid[1]];
+  svg.transition().duration(900).call(
+    zoom.transform,
+    d3.zoomIdentity.translate(t[0], t[1]).scale(s)
+  );
 }
 
 function resetZoom() { svg.transition().duration(1000).call(zoom.transform, d3.zoomIdentity); }
