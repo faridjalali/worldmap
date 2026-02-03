@@ -360,13 +360,23 @@ function handleCityClick(event, cityNode, id) {
 
   if (dot.classed("wrong-choice") || dot.classed("correct-choice")) return;
 
+  const data = gameData[id];
+  const clickedCityFact = data.cities.find(c => c.name === cityNode.name)?.fact || "Major city.";
+
   if (isCorrect) {
     dot.classed("correct-choice", true);
     score += 20; updateScoreUI();
-    showFact(cityNode.name, id, "CORRECT", "status-correct");
+    const correctFact = isCapitalMode ? `Capital of ${data.name}` : clickedCityFact;
+    showFact(cityNode.name, id, "CORRECT", "status-correct", correctFact);
   } else {
     dot.classed("wrong-choice", true);
+    document.getElementById("sub-prompt").innerHTML = `That is <span style="color:var(--neon-amber)">${cityNode.name}</span>. Try again.`;
     score -= 10; updateScoreUI();
+    
+    if (!isCapitalMode) {
+      // In Fact mode, show modal for wrong answer too
+      showFact(cityNode.name, id, "INCORRECT", "status-wrong", clickedCityFact, "Try Again", closeOverlay);
+    }
   }
 }
 
@@ -375,18 +385,24 @@ function showFact(cityName, id, status, statusClass) {
   const overlay = document.getElementById("fact-overlay");
   const btn = document.getElementById("next-action-btn");
 
-  const cityFact = data.cities.find(c => c.name === cityName)?.fact;
+function showFact(cityName, id, status, statusClass, factText, btnLabel = "Next Country", btnAction = null) {
+  const data = gameData[id];
+  const overlay = document.getElementById("fact-overlay");
+  const btn = document.getElementById("next-action-btn");
 
   document.getElementById("fact-status").innerText = status;
   document.getElementById("fact-status").className = `fact-status ${statusClass}`;
   document.getElementById("fact-city-name").innerText = cityName;
-  document.getElementById("fact-text").innerText =
-    isCapitalMode ? `Capital of ${data.name}` : cityFact || "Major city.";
+  document.getElementById("fact-text").innerText = factText || (isCapitalMode ? `Capital of ${data.name}` : "Major city.");
 
-  btn.innerText = "Next Country";
-  btn.onclick = resetGameRound;
+  btn.innerText = btnLabel;
+  btn.onclick = btnAction || resetGameRound;
 
   overlay.classList.add("show");
+}
+
+function closeOverlay() {
+  document.getElementById("fact-overlay").classList.remove("show");
 }
 
 function toggleMode() {
