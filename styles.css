@@ -260,7 +260,7 @@ body {
 
 #prompt-container {
   position: absolute;
-  top: max(18%, 155px); /* Closer to HUD but safe */
+  top: 110px; /* Very tight fit (HUD bottom ~95px) */
   width: 100%;
   text-align: center;
   text-shadow: 0 5px 25px black;
