@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>World Map Quiz</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://unpkg.com/topojson-client@3"></script>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="city-tooltip"></div>
+  <div id="map-stage"></div>
+
+  <div id="ui-layer">
+    <div id="top-hud">
+      <div class="hud-group">
+        <span class="hud-item">Target</span>
+        <span id="target-state" class="hud-val">--</span>
+      </div>
+      <div class="hud-group">
+        <span class="hud-item">Score</span>
+        <span id="score-val" class="hud-val">0</span>
+      </div>
+      <div class="hud-group toggle-container active" id="mode-toggle">
+        <span class="hud-item" id="mode-label">Capital</span>
+        <div class="toggle-switch"><div class="toggle-knob"></div></div>
+      </div>
+    </div>
+
+    <div id="prompt-container">
+      <p id="find-label">Initializing...</p>
+      <h1 id="main-prompt">Loading Map Data...</h1>
+      <div id="sub-prompt"></div>
+    </div>
+  </div>
+
+  <div id="fact-overlay">
+    <div class="fact-card">
+      <div class="fact-status" id="fact-status">Result</div>
+      <div class="fact-city" id="fact-city-name">Capital</div>
+      <div class="fact-body" id="fact-text">Fact</div>
+      <button class="next-btn" id="next-action-btn">Continue</button>
+    </div>
+  </div>
+
+  <script type="module" src="./quiz.js"></script>
+</body>
+</html>
