@@ -76,6 +76,11 @@ async function initGame() {
 
     const filteredFeatures = features.filter(f => gameData[pad3(f.id)]);
 
+    // Special Handling: Trim France and Russia for tighter zoom on Europe
+    if (continentParam === "europe") {
+      trimEuropeGeometry(filteredFeatures);
+    }
+
     const vp = getMapViewport();
     projection = d3.geoMercator().fitExtent([[vp.x0, vp.y0], [vp.x1, vp.y1]], {
       type: "FeatureCollection",
