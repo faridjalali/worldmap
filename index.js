@@ -58,7 +58,7 @@ async function init() {
 
     buildSvg();
     render();
-    setStatus("Hover a continent and click to start");
+    setStatus("");
   } catch (err) {
     console.error(err);
     setStatus("Map failed to load");
