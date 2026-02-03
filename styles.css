@@ -260,7 +260,7 @@ body {
 
 #prompt-container {
   position: absolute;
-  top: max(20%, 140px); /* Responsive but never higher than 140px */
+  top: max(20%, 180px); /* Responsive but never higher than 180px */
   width: 100%;
   text-align: center;
   text-shadow: 0 5px 25px black;
@@ -476,11 +476,7 @@ body {
 }
 
 /* Back Button styles moved to #top-bar section */
-.back-btn:hover {
-  background: white;
-  color: black;
-  transform: scale(1.1);
-}
+/* Back Button styles moved to #top-bar section */
 .back-btn svg {
   width: 24px;
   height: 24px;
