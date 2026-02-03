@@ -430,3 +430,48 @@ body {
   padding: 30px;
   font-size: 1rem;
 }
+
+/* Mobile Layout */
+.mobile-list {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+  width: 100%;
+  max-width: 300px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.mobile-list .world-btn {
+  text-align: center;
+  width: 100%;
+}
+
+@media (max-width: 768px) {
+  .landing-header {
+    margin-bottom: 20px;
+  }
+  
+  /* Move "Entire World" button below title */
+  .world-btn.top-right {
+    position: static;
+    display: block;
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto 20px; /* Center and add gap below */
+    text-align: center;
+  }
+
+  /* Hide Map */
+  .map-stage {
+    display: none;
+    height: 0;
+    min-height: 0;
+  }
+
+  /* Show List */
+  .mobile-list {
+    display: flex;
+  }
+}
