@@ -31,11 +31,6 @@ const DOT_SCREEN_EXP = 0.35;
 const DOT_SCREEN_MIN = 2;
 const DOT_SCREEN_MAX = 7;
 
-const HALO_SCREEN_BASE = 2;
-const HALO_SCREEN_EXP = 0.35;
-const HALO_SCREEN_MIN = 0.6;
-const HALO_SCREEN_MAX = 2.4;
-
 window.addEventListener("load", initGame);
 
 async function initGame() {
@@ -251,15 +246,10 @@ function getDotStyle() {
     DOT_SCREEN_MAX,
     DOT_SCREEN_BASE / Math.pow(currentScale, DOT_SCREEN_EXP)
   );
-  const screenStroke = clamp(
-    HALO_SCREEN_MIN,
-    HALO_SCREEN_MAX,
-    HALO_SCREEN_BASE / Math.pow(currentScale, HALO_SCREEN_EXP)
-  );
 
   return {
     r: screenR / currentScale,
-    stroke: screenStroke / currentScale
+    stroke: 0
   };
 }
 
