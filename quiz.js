@@ -249,7 +249,7 @@ function getDotStyle() {
 
   return {
     r: screenR / currentScale,
-    strokeWidth: 0
+    strokeWidth: 1 / currentScale
   };
 }
 
