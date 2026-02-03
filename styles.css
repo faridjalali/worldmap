@@ -492,18 +492,9 @@ body {
     margin-bottom: 10px;
   }
   
-  /* Move "Entire World" button below title */
+  /* Hide Desktop "Entire World" button on mobile */
   .world-btn.top-right {
-    position: static;
-    display: block;
-    width: 100%;
-    max-width: 320px;
-    margin: 10px auto 10px; 
-    text-align: center;
-    border-radius: 12px !important; /* Ensure consistent rectangular style */
-    -webkit-appearance: none;
-    appearance: none;
-    box-sizing: border-box;
+    display: none;
   }
 
   /* Hide Map */
