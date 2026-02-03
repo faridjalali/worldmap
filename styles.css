@@ -557,4 +557,9 @@ body {
   /* Shift HUD slightly right to make room for back btn if needed, 
      but since HUD is centered and back btn is absolute left, 
      we just need to check overlap. */
+  
+  /* Prevent prompt from overlapping HUD on small screens */
+  #prompt-container {
+    top: 110px;
+  }
 }
