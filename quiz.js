@@ -343,7 +343,7 @@ function plotCities(id, cityChoices) {
     return projected ? { name: c.name, x: projected[0], y: projected[1] } : null;
   }).filter(Boolean);
 
-  const { r, strokeWidth } = getDotStyle();
+  const { r } = getDotStyle();
 
   g.selectAll(".city-node")
     .data(nodes)
