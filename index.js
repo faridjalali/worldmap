@@ -24,9 +24,17 @@ const CONTINENTS = {
 
 let svg, g, projection, path, features = [];
 
-init();
+window.addEventListener("load", init);
 
 async function init() {
+  if (!mapContainer) return;
+
+  if (!window.d3 || !window.topojson) {
+    setStatus("Map libraries failed to load");
+    mapContainer.innerHTML = `<div class="map-error">D3 or TopoJSON failed to load.</div>`;
+    return;
+  }
+
   try {
     setStatus("Loading map…");
     const topo = await fetchFirstOk(SOURCES.topo, "World Atlas");
@@ -79,10 +87,10 @@ function buildSvg() {
 
 function render() {
   const rect = mapContainer.getBoundingClientRect();
-  const width = Math.max(320, rect.width);
-  const height = Math.max(320, rect.height);
+  const width = Math.max(360, rect.width || 0);
+  const height = Math.max(360, rect.height || 0);
 
-  svg.attr("viewBox", `0 0 ${width} ${height}`);
+  svg.attr("width", width).attr("height", height).attr("viewBox", `0 0 ${width} ${height}`);
 
   projection = d3.geoNaturalEarth1().fitSize([width, height], {
     type: "FeatureCollection",
@@ -90,7 +98,6 @@ function render() {
   });
 
   path = d3.geoPath().projection(projection);
-
   g.selectAll("path").attr("d", path);
 }
 
