@@ -334,7 +334,6 @@ function transitionToCityPhase(geoData, id) {
   document.getElementById("mode-toggle").classList.add("disabled");
 
   plotCities(id, cityChoices);
-  setTimeout(() => { d3.selectAll(".city-node").style("pointer-events", "auto"); }, 600);
 }
 
 function plotCities(id, cityChoices) {
@@ -356,7 +355,8 @@ function plotCities(id, cityChoices) {
     .on("mousemove", moveTooltip)
     .on("mouseout", hideTooltip)
     .on("click", (e, d) => handleCityClick(e, d, id))
-    .transition().duration(400).delay(200).attr("r", r);
+    .attr("r", r)
+    .style("pointer-events", "auto");
 }
 
 function handleCityClick(event, cityNode, id) {

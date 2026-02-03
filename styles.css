@@ -113,8 +113,6 @@ body {
   vector-effect: non-scaling-stroke;
   cursor: pointer;
   pointer-events: none;
-  transition: fill 0.3s, stroke 0.3s, opacity 0.3s;
-  animation: markerPulse 2s infinite ease-in-out;
 }
 .city-node:hover {
   fill: #fff;
@@ -134,20 +132,7 @@ body {
   animation: none;
 }
 
-@keyframes markerPulse {
-  0% {
-    stroke-width: 0.5px;
-    opacity: 0.2;
-  }
-  50% {
-    stroke-width: 1.5px;
-    opacity: 0.6;
-  }
-  100% {
-    stroke-width: 0.5px;
-    opacity: 0.2;
-  }
-}
+
 
 #ui-layer {
   position: absolute;
