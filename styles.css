@@ -413,7 +413,7 @@ body {
   text-decoration: none;
   font-weight: 800;
   padding: 12px 24px;
-  border-radius: 999px;
+  border-radius: 12px; /* Rectangular style */
   text-transform: uppercase;
   letter-spacing: 1px;
 }
@@ -434,8 +434,8 @@ body {
 /* Back Button */
 .back-btn {
   position: absolute;
-  top: 40px;
-  left: 40px; /* Align with top-hud top */
+  top: 43px; /* visual center alignment with HUD */
+  left: 40px;
   width: 44px;
   height: 44px;
   display: flex;
@@ -494,7 +494,7 @@ body {
     max-width: 320px;
     margin: 10px auto 10px; 
     text-align: center;
-    border-radius: 999px; /* Ensure pill shape */
+    border-radius: 12px; /* Ensure consistent rectangular style */
     box-sizing: border-box;
   }
 
@@ -523,8 +523,8 @@ body {
   .hud-val { font-size: 1rem; }
   
   .back-btn {
-    top: 20px;
-    left: 10px; /* Tighter on mobile */
+    top: 23px; /* Adjusted for mobile HUD top: 20px + padding/center */
+    left: 10px;
     width: 36px;
     height: 36px;
   }
