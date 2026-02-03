@@ -362,6 +362,7 @@ function handleCityClick(event, cityNode, id) {
 
   const data = gameData[id];
   const clickedCityFact = data.cities.find(c => c.name === cityNode.name)?.fact || "Major city.";
+  const targetFact = data.cities.find(c => c.name === targetCityName)?.fact || "Major city.";
 
   if (isCorrect) {
     dot.classed("correct-choice", true);
@@ -370,12 +371,16 @@ function handleCityClick(event, cityNode, id) {
     showFact(cityNode.name, id, "CORRECT", "status-correct", correctFact);
   } else {
     dot.classed("wrong-choice", true);
-    document.getElementById("sub-prompt").innerHTML = `That is <span style="color:var(--neon-amber)">${cityNode.name}</span>. Try again.`;
     score -= 10; updateScoreUI();
     
     if (!isCapitalMode) {
-      // In Fact mode, show modal for wrong answer too
+      // In Fact mode, enforce showing the target fact so user can focus on it
+      document.getElementById("sub-prompt").innerText = `"${targetFact}"`;
+      // Show modal with target fact as reminder
       showFact(cityNode.name, id, "INCORRECT", "status-wrong", clickedCityFact, "Try Again", closeOverlay);
+    } else {
+       // Capital mode - standard feedback
+       document.getElementById("sub-prompt").innerHTML = `That is <span style="color:var(--neon-amber)">${cityNode.name}</span>. Try again.`;
     }
   }
 }
