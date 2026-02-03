@@ -182,6 +182,12 @@ body {
   flex-direction: column;
   align-items: center;
   cursor: pointer;
+  min-width: 80px; /* Ensure container doesn't shrink */
+}
+#mode-label {
+  display: inline-block;
+  width: 60px; /* Fixed width to hold 'Capital' without resizing */
+  text-align: center;
 }
 .toggle-switch {
   width: 40px;
