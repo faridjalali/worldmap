@@ -248,16 +248,14 @@ function getDotStyle() {
   );
 
   return {
-    r: screenR / currentScale,
-    strokeWidth: 0.5 / currentScale
+    r: screenR / currentScale
   };
 }
 
 function updateCityNodeStyle() {
-  const { r, strokeWidth } = getDotStyle();
+  const { r } = getDotStyle();
   d3.selectAll(".city-node")
-    .attr("r", r)
-    .attr("stroke-width", strokeWidth);
+    .attr("r", r);
 }
 
 // --- GAME LOGIC ---
@@ -353,7 +351,6 @@ function plotCities(id, cityChoices) {
     .attr("class", "city-node")
     .attr("cx", d => d.x)
     .attr("cy", d => d.y)
-    .attr("stroke-width", strokeWidth)
     .attr("r", 0)
     .on("mouseover", showTooltip)
     .on("mousemove", moveTooltip)

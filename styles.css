@@ -110,9 +110,10 @@ body {
   fill: var(--neon-blue);
   stroke: rgba(0, 243, 255, 0.2);
   stroke-width: 0.5px;
+  vector-effect: non-scaling-stroke;
   cursor: pointer;
   pointer-events: none;
-  transition: 0.3s;
+  transition: fill 0.3s, stroke 0.3s, opacity 0.3s;
   animation: markerPulse 2s infinite ease-in-out;
 }
 .city-node:hover {
