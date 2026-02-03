@@ -19,6 +19,8 @@ let targetCapital = "";
 let gameData = {};
 let features = [];
 
+const mapPadding = { top: 90, right: 40, bottom: 40, left: 40 };
+
 window.addEventListener("load", initGame);
 
 async function initGame() {
@@ -64,7 +66,8 @@ async function initGame() {
 
     const filteredFeatures = features.filter(f => gameData[pad3(f.id)]);
 
-    projection = d3.geoMercator().fitSize([width, height * 0.9], {
+    const vp = getMapViewport();
+    projection = d3.geoMercator().fitExtent([[vp.x0, vp.y0], [vp.x1, vp.y1]], {
       type: "FeatureCollection",
       features: filteredFeatures
     });
@@ -85,6 +88,22 @@ async function initGame() {
     document.getElementById("main-prompt").innerText = "Error Loading Map";
     document.getElementById("sub-prompt").innerText = err.message;
   }
+}
+
+function getMapViewport() {
+  let top = mapPadding.top;
+  const hud = document.getElementById("top-hud");
+  if (hud) {
+    const rect = hud.getBoundingClientRect();
+    top = Math.max(top, rect.bottom + 12);
+  }
+
+  return {
+    x0: mapPadding.left,
+    y0: top,
+    x1: width - mapPadding.right,
+    y1: height - mapPadding.bottom
+  };
 }
 
 function buildGameData(features, byCcn3, continentParam) {
@@ -325,6 +344,10 @@ function hideTooltip() { document.getElementById("city-tooltip").style.opacity =
 function resetGameRound() { startRound(); }
 
 function zoomToState(d) {
+  const vp = getMapViewport();
+  const vpWidth = vp.x1 - vp.x0;
+  const vpHeight = vp.y1 - vp.y0;
+
   const b = path.bounds(d);
   const dx = b[1][0] - b[0][0];
   const dy = b[1][1] - b[0][1];
@@ -336,11 +359,14 @@ function zoomToState(d) {
     dx < width * 3 &&
     dy < height * 3;
 
+  const targetX = (vp.x0 + vp.x1) / 2;
+  const targetY = (vp.y0 + vp.y1) / 2;
+
   if (boundsValid) {
     const x = (b[0][0] + b[1][0]) / 2;
     const y = (b[0][1] + b[1][1]) / 2;
-    const s = Math.max(1, Math.min(10, 0.75 / Math.max(dx / width, dy / height)));
-    const t = [width / 2 - s * x, height / 2 - s * y];
+    const s = Math.max(1, Math.min(10, 0.78 / Math.max(dx / vpWidth, dy / vpHeight)));
+    const t = [targetX - s * x, targetY - s * y];
     svg.transition().duration(900).call(
       zoom.transform,
       d3.zoomIdentity.translate(t[0], t[1]).scale(s)
@@ -348,12 +374,11 @@ function zoomToState(d) {
     return;
   }
 
-  // Fallback for antimeridian-spanning or extreme geometries
   const centroid = projection(d3.geoCentroid(d));
   if (!centroid) return;
 
   const s = 4;
-  const t = [width / 2 - s * centroid[0], height / 2 - s * centroid[1]];
+  const t = [targetX - s * centroid[0], targetY - s * centroid[1]];
   svg.transition().duration(900).call(
     zoom.transform,
     d3.zoomIdentity.translate(t[0], t[1]).scale(s)
