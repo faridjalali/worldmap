@@ -1,11 +1,11 @@
-const URLS = {
+const SOURCES = {
   topo: [
     "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json",
     "https://unpkg.com/world-atlas@2/countries-110m.json"
   ],
-  rest: [
-    "https://restcountries.com/v3.1/all?fields=name,cca3,region,subregion,capital,capitalInfo,population,area,languages,currencies",
-    "https://restcountries.com/v3.1/all"
+  countries: [
+    "https://cdn.jsdelivr.net/npm/world-countries@5.1.0/countries.json",
+    "https://unpkg.com/world-countries@5.1.0/countries.json"
   ]
 };
 
@@ -19,7 +19,7 @@ let targetCapital = "";
 let gameData = {};
 let features = [];
 
-window.onload = initGame;
+window.addEventListener("load", initGame);
 
 async function initGame() {
   width = window.innerWidth;
@@ -44,14 +44,19 @@ async function initGame() {
   document.getElementById("mode-toggle").onclick = toggleMode;
 
   try {
-    const topo = await fetchFirstOk(URLS.topo, "TopoJSON");
-    const rest = await fetchFirstOk(URLS.rest, "RestCountries");
+    const topo = await fetchFirstOk(SOURCES.topo, "World Atlas");
+    const countries = await fetchFirstOk(SOURCES.countries, "World Countries");
+
+    const byCcn3 = new Map();
+    for (const c of countries) {
+      if (!c.ccn3) continue;
+      byCcn3.set(pad3(c.ccn3), c);
+    }
 
     const world = topojson.feature(topo, topo.objects.countries);
     features = world.features;
 
-    const restByName = buildRestLookup(rest);
-    gameData = buildGameData(features, restByName, continentParam);
+    gameData = buildGameData(features, byCcn3, continentParam);
 
     if (Object.keys(gameData).length === 0) {
       throw new Error("No countries matched for this continent.");
@@ -81,125 +86,98 @@ async function initGame() {
   }
 }
 
-async function fetchFirstOk(urls, label) {
-  let lastErr = null;
-  for (const url of urls) {
-    try {
-      const res = await fetch(url, { mode: "cors" });
-      if (!res.ok) throw new Error(`${label} fetch failed (${res.status}) from ${url}`);
-      return await res.json();
-    } catch (e) {
-      lastErr = e;
-    }
-  }
-  throw new Error(`${label} fetch failed on all sources. ${lastErr ? lastErr.message : ""}`);
-}
-
-function buildRestLookup(restCountries) {
-  const map = new Map();
-  for (const c of restCountries) {
-    const name = c?.name?.common;
-    if (!name) continue;
-    map.set(normalizeName(name), c);
-  }
-  return map;
-}
-
-function buildGameData(features, restByName, continent) {
+function buildGameData(features, byCcn3, continentParam) {
   const data = {};
   for (const f of features) {
-    const name = f?.properties?.name;
-    if (!name) continue;
+    const meta = byCcn3.get(f.id);
+    if (!meta) continue;
 
-    const rest = resolveCountry(name, restByName);
-    if (!rest) continue;
+    const continent = resolveContinent(meta);
+    if (!continent) continue;
+    if (!continentMatches(continent, continentParam)) continue;
 
-    if (!continentMatch(rest, continent)) continue;
+    const capitalName = Array.isArray(meta.capital) ? meta.capital[0] : meta.capital;
+    if (!capitalName) continue;
 
-    const capital = (rest.capital && rest.capital[0]) ? rest.capital[0] : null;
-    const capitalLatLng = rest.capitalInfo?.latlng || null;
-
-    if (!capital || !capitalLatLng) continue;
+    const capitalCoord = getCapitalCoord(meta, f);
 
     data[f.id] = {
       id: f.id,
-      name,
-      iso: rest.cca3,
-      capital,
-      capitalLatLng,
-      facts: buildFacts(rest)
+      name: meta.name?.common || meta.name?.official || meta.name,
+      iso: meta.cca3 || meta.cioc || meta.cca2 || meta.ccn3,
+      capital: capitalName,
+      capitalCoord,
+      facts: buildFacts(meta)
     };
   }
   return data;
 }
 
-function resolveCountry(name, restByName) {
-  const key = normalizeName(name);
-  if (restByName.has(key)) return restByName.get(key);
+function getCapitalCoord(meta, feature) {
+  if (Array.isArray(meta.capitalInfo?.latlng) && meta.capitalInfo.latlng.length === 2) {
+    return [meta.capitalInfo.latlng[1], meta.capitalInfo.latlng[0]];
+  }
+  if (Array.isArray(meta.latlng) && meta.latlng.length === 2) {
+    return [meta.latlng[1], meta.latlng[0]];
+  }
+  return d3.geoCentroid(feature);
+}
 
-  const alias = aliasMap[key];
-  if (alias && restByName.has(alias)) return restByName.get(alias);
+function resolveContinent(meta) {
+  const region = (meta.region || "").toLowerCase();
+  const subregion = (meta.subregion || "").toLowerCase();
 
+  if (region === "americas") {
+    if (subregion.includes("south")) return "south-america";
+    return "north-america";
+  }
+  if (region === "europe") return "europe";
+  if (region === "africa") return "africa";
+  if (region === "asia") return "asia";
+  if (region === "oceania") return "oceania";
   return null;
 }
 
-const aliasMap = {
-  "bolivia": "bolivia (plurinational state of)",
-  "brunei": "brunei darussalam",
-  "cape verde": "cabo verde",
-  "czechia": "czech republic",
-  "cote d ivoire": "côte d'ivoire",
-  "ivory coast": "côte d'ivoire",
-  "democratic republic of the congo": "congo (democratic republic of the)",
-  "republic of the congo": "congo",
-  "iran": "iran (islamic republic of)",
-  "laos": "lao people's democratic republic",
-  "moldova": "moldova (republic of)",
-  "north macedonia": "macedonia (the former yugoslav republic of)",
-  "russia": "russian federation",
-  "syria": "syrian arab republic",
-  "tanzania": "tanzania, united republic of",
-  "venezuela": "venezuela (bolivarian republic of)",
-  "vietnam": "viet nam",
-  "palestine": "palestine, state of"
-};
-
-function normalizeName(name) {
-  return name.toLowerCase()
-    .replace(/[’']/g, "")
-    .replace(/[^a-z\s]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+function continentMatches(continent, param) {
+  if (param === "world") return true;
+  return continent === param;
 }
 
-function continentMatch(rest, continent) {
-  if (continent === "world") return true;
-  const region = (rest.region || "").toLowerCase();
-  const subregion = (rest.subregion || "").toLowerCase();
-
-  switch (continent) {
-    case "africa": return region === "africa";
-    case "asia": return region === "asia";
-    case "europe": return region === "europe";
-    case "oceania": return region === "oceania";
-    case "south-america": return subregion === "south america";
-    case "north-america": return region === "americas" && subregion !== "south america";
-    default: return true;
-  }
-}
-
-function buildFacts(rest) {
-  const pop = rest.population ? rest.population.toLocaleString() : "Unknown";
-  const area = rest.area ? rest.area.toLocaleString() + " km²" : "Unknown";
-  const languages = rest.languages ? Object.values(rest.languages).slice(0, 3).join(", ") : "Unknown";
-  const currencies = rest.currencies ? Object.values(rest.currencies).map(c => c.name).slice(0, 2).join(", ") : "Unknown";
+function buildFacts(meta) {
+  const region = meta.region || "Unknown";
+  const subregion = meta.subregion || "Unknown";
+  const area = meta.area ? `${meta.area.toLocaleString()} km²` : "Unknown";
+  const languages = meta.languages ? Object.values(meta.languages).slice(0, 3).join(", ") : "Unknown";
+  const currencies = meta.currencies
+    ? Object.values(meta.currencies).map(c => c.name).slice(0, 2).join(", ")
+    : "Unknown";
 
   return [
-    `Population: ${pop}`,
+    `Region: ${region}`,
+    `Subregion: ${subregion}`,
     `Area: ${area}`,
     `Languages: ${languages}`,
     `Currencies: ${currencies}`
   ];
+}
+
+function pad3(n) {
+  const s = String(n);
+  return s.length >= 3 ? s : s.padStart(3, "0");
+}
+
+async function fetchFirstOk(urls, label) {
+  let lastErr = null;
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { mode: "cors" });
+      if (!res.ok) throw new Error(`${label} fetch failed (${res.status})`);
+      return await res.json();
+    } catch (err) {
+      lastErr = err;
+    }
+  }
+  throw new Error(`${label} failed on all sources. ${lastErr ? lastErr.message : ""}`);
 }
 
 // --- GAME LOGIC ---
@@ -272,8 +250,7 @@ function transitionToCapitalPhase(geoData, id) {
 
 function plotCapital(id) {
   const data = gameData[id];
-  const coords = [data.capitalLatLng[1], data.capitalLatLng[0]];
-  const projected = projection(coords);
+  const projected = projection(data.capitalCoord);
   if (!projected) return;
 
   const node = { name: data.capital, x: projected[0], y: projected[1] };
