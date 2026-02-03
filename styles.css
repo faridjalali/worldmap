@@ -431,26 +431,59 @@ body {
   font-size: 1rem;
 }
 
+/* Back Button */
+.back-btn {
+  position: absolute;
+  top: 40px;
+  left: 40px; /* Align with top-hud top */
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--glass);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  color: white;
+  text-decoration: none;
+  backdrop-filter: blur(15px);
+  z-index: 20;
+  transition: 0.3s;
+  pointer-events: auto;
+}
+.back-btn:hover {
+  background: white;
+  color: black;
+  transform: scale(1.1);
+}
+.back-btn svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+}
+
 /* Mobile Layout */
 .mobile-list {
   display: none;
   flex-direction: column;
   gap: 12px;
-  margin-top: 20px;
+  margin-top: 10px;
   width: 100%;
-  max-width: 300px;
+  max-width: 320px;
   margin-left: auto;
   margin-right: auto;
+  padding-bottom: 20px;
 }
 
 .mobile-list .world-btn {
   text-align: center;
   width: 100%;
+  display: block;
 }
 
 @media (max-width: 768px) {
   .landing-header {
-    margin-bottom: 20px;
+    margin-bottom: 10px;
   }
   
   /* Move "Entire World" button below title */
@@ -458,9 +491,11 @@ body {
     position: static;
     display: block;
     width: 100%;
-    max-width: 300px;
-    margin: 0 auto 20px; /* Center and add gap below */
+    max-width: 320px;
+    margin: 10px auto 10px; 
     text-align: center;
+    border-radius: 999px; /* Ensure pill shape */
+    box-sizing: border-box;
   }
 
   /* Hide Map */
@@ -474,4 +509,28 @@ body {
   .mobile-list {
     display: flex;
   }
+
+  /* Adjust HUD and Back Button on mobile */
+  #top-hud {
+    top: 20px;
+    padding: 8px 20px;
+    gap: 20px;
+    width: 85%;
+    justify-content: space-around;
+  }
+  .hud-group { min-width: auto; }
+  .hud-item { font-size: 0.6rem; }
+  .hud-val { font-size: 1rem; }
+  
+  .back-btn {
+    top: 20px;
+    left: 10px; /* Tighter on mobile */
+    width: 36px;
+    height: 36px;
+  }
+  .back-btn svg { width: 18px; height: 18px; }
+  
+  /* Shift HUD slightly right to make room for back btn if needed, 
+     but since HUD is centered and back btn is absolute left, 
+     we just need to check overlap. */
 }
