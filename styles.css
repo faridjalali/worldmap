@@ -143,11 +143,22 @@ body {
   pointer-events: none;
 }
 
-#top-hud {
+/* Wrapper for HUD and Back Button to ensure vertical centering */
+#top-bar {
   position: absolute;
   top: 40px;
-  left: 50%;
-  transform: translateX(-50%);
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  z-index: 10;
+}
+
+#top-hud {
+  /* Removed absolute positioning */
+  position: relative;
+  /* Removed top/left/transform */
   background: var(--glass);
   border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 10px 30px;
@@ -155,10 +166,37 @@ body {
   display: flex;
   gap: 40px;
   backdrop-filter: blur(15px);
-  z-index: 10;
   pointer-events: auto;
 }
 
+/* Back Button */
+.back-btn {
+  position: absolute;
+  left: 40px;
+  /* Vertically center within #top-bar */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--glass);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  color: white;
+  text-decoration: none;
+  backdrop-filter: blur(15px);
+  z-index: 20;
+  transition: 0.3s;
+  pointer-events: auto;
+}
+.back-btn:hover {
+  background: white;
+  color: black;
+  /* Include translateY in hover transform to maintain position */
+  transform: translateY(-50%) scale(1.1);
+}
 .hud-group {
   display: flex;
   flex-direction: column;
@@ -437,26 +475,7 @@ body {
   font-size: 1rem;
 }
 
-/* Back Button */
-.back-btn {
-  position: absolute;
-  top: 58px; /* visual center alignment with HUD */
-  left: 40px;
-  width: 44px;
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--glass);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
-  color: white;
-  text-decoration: none;
-  backdrop-filter: blur(15px);
-  z-index: 20;
-  transition: 0.3s;
-  pointer-events: auto;
-}
+/* Back Button styles moved to #top-bar section */
 .back-btn:hover {
   background: white;
   color: black;
@@ -510,11 +529,16 @@ body {
   }
 
   /* Adjust HUD and Back Button on mobile */
+  /* Adjust HUD and Back Button on mobile */
+  #top-bar {
+    top: 20px; /* Reduced top spacing for mobile */
+  }
+  
   #top-hud {
-    top: 20px;
+    /* Mobile HUD adjustments */
     padding: 8px 20px;
     gap: 20px;
-    width: 85%;
+    width: 80%; /* Width constrained */
     justify-content: space-around;
   }
   .hud-group { min-width: auto; }
@@ -522,10 +546,11 @@ body {
   .hud-val { font-size: 1rem; }
   
   .back-btn {
-    top: 38px; /* Adjusted for mobile HUD top: +15px from original */
+    /* Mobile back button */
     left: 10px;
     width: 36px;
     height: 36px;
+    /* top/transform already handled by parent centering */
   }
   .back-btn svg { width: 18px; height: 18px; }
   
