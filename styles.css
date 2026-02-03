@@ -193,3 +193,131 @@ body {
 .legend-item.af { color: #b6ffc0; }
 .legend-item.as { color: #d2b8ff; }
 .legend-item.oc { color: #ffc1e6; }
+
+:root {
+  --c-na: rgba(255, 120, 120, 0.55);
+  --c-sa: rgba(255, 195, 120, 0.55);
+  --c-eu: rgba(140, 200, 255, 0.55);
+  --c-af: rgba(120, 255, 190, 0.55);
+  --c-as: rgba(190, 160, 255, 0.55);
+  --c-oc: rgba(255, 150, 220, 0.55);
+}
+
+.landing {
+  overflow: hidden;
+  background: radial-gradient(1200px 600px at 50% -10%, rgba(0,243,255,0.15), transparent 60%),
+              linear-gradient(180deg, #050505, #0c0c0c);
+}
+
+.landing-shell {
+  min-height: 100vh;
+  display: grid;
+  gap: 18px;
+  place-items: center;
+  padding: 40px 16px 60px;
+}
+
+.landing-header {
+  text-align: center;
+}
+
+.landing-title {
+  font-size: clamp(2.3rem, 4vw, 3.5rem);
+  margin: 0;
+}
+
+.landing-subtitle {
+  color: #bbb;
+  margin-top: 8px;
+}
+
+.landing-status {
+  margin-top: 8px;
+  font-size: 0.95rem;
+  color: rgba(255,255,255,0.65);
+}
+
+.map-card {
+  width: min(1100px, 95vw);
+  background: rgba(10, 10, 10, 0.75);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 24px;
+  padding: 18px;
+  backdrop-filter: blur(16px);
+  position: relative;
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.6);
+}
+
+.map-stage {
+  width: 100%;
+  height: min(70vh, 560px);
+  position: relative;
+}
+
+.world-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.country {
+  fill: rgba(120, 180, 220, 0.22);
+  stroke: rgba(255, 255, 255, 0.15);
+  stroke-width: 0.5;
+  transition: fill 0.2s, opacity 0.2s, stroke 0.2s;
+}
+
+.country.dim {
+  opacity: 0.15;
+}
+
+.country.highlight {
+  opacity: 1;
+  stroke: rgba(255,255,255,0.8);
+  stroke-width: 1.2;
+}
+
+.country.highlight[data-continent="north-america"] { fill: var(--c-na); }
+.country.highlight[data-continent="south-america"] { fill: var(--c-sa); }
+.country.highlight[data-continent="europe"] { fill: var(--c-eu); }
+.country.highlight[data-continent="africa"] { fill: var(--c-af); }
+.country.highlight[data-continent="asia"] { fill: var(--c-as); }
+.country.highlight[data-continent="oceania"] { fill: var(--c-oc); }
+
+.map-tooltip {
+  position: absolute;
+  background: #0b0b0b;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: white;
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 10px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.map-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.world-btn {
+  display: inline-block;
+  background: var(--neon-blue);
+  color: #000;
+  text-decoration: none;
+  font-weight: 800;
+  padding: 12px 24px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.map-error {
+  color: #ff8b8b;
+  text-align: center;
+  padding: 30px;
+  font-size: 1rem;
+}
+
