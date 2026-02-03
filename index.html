@@ -7,58 +7,24 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body class="landing">
-  <main class="landing-wrap">
-    <h1 class="landing-title">World Map Quiz</h1>
-    <p class="landing-subtitle">Hover a continent and click to begin</p>
+  <main class="landing-shell">
+    <div class="landing-header">
+      <h1 class="landing-title">World Map Quiz</h1>
+      <p class="landing-subtitle">Hover a continent and click to begin</p>
+      <div id="map-status" class="landing-status">Loading map…</div>
+    </div>
 
-    <div class="map-wrap">
-      <svg viewBox="0 0 1000 520" class="world-map" aria-label="World map">
-        <!-- North America -->
-        <a href="./quiz.html?continent=north-america" class="continent-link" aria-label="North America">
-          <path class="continent c-na" d="M86,102 L192,70 L310,96 L342,158 L320,222 L254,250 L190,230 L126,200 L92,154 Z"/>
-        </a>
-
-        <!-- South America -->
-        <a href="./quiz.html?continent=south-america" class="continent-link" aria-label="South America">
-          <path class="continent c-sa" d="M248,256 L300,266 L340,326 L330,422 L286,486 L252,438 L232,364 L222,300 Z"/>
-        </a>
-
-        <!-- Europe -->
-        <a href="./quiz.html?continent=europe" class="continent-link" aria-label="Europe">
-          <path class="continent c-eu" d="M440,98 L500,80 L558,98 L548,136 L500,150 L452,140 Z"/>
-        </a>
-
-        <!-- Africa -->
-        <a href="./quiz.html?continent=africa" class="continent-link" aria-label="Africa">
-          <path class="continent c-af" d="M460,170 L560,180 L598,270 L566,404 L480,430 L430,340 L440,240 Z"/>
-        </a>
-
-        <!-- Asia -->
-        <a href="./quiz.html?continent=asia" class="continent-link" aria-label="Asia">
-          <path class="continent c-as" d="M570,110 L720,90 L860,150 L888,230 L820,300 L690,290 L610,220 Z"/>
-        </a>
-
-        <!-- Oceania -->
-        <a href="./quiz.html?continent=oceania" class="continent-link" aria-label="Oceania">
-          <path class="continent c-oc" d="M760,340 L850,360 L890,420 L820,470 L740,430 Z"/>
-        </a>
-
-        <!-- World link -->
-        <a href="./quiz.html?continent=world" class="continent-link" aria-label="World">
-          <circle class="continent c-world" cx="930" cy="70" r="38"></circle>
-          <text x="930" y="76" text-anchor="middle" class="world-text">World</text>
-        </a>
-      </svg>
-
-      <div class="map-legend">
-        <span class="legend-item na">North America</span>
-        <span class="legend-item sa">South America</span>
-        <span class="legend-item eu">Europe</span>
-        <span class="legend-item af">Africa</span>
-        <span class="legend-item as">Asia</span>
-        <span class="legend-item oc">Oceania</span>
+    <div class="map-card">
+      <div id="continent-map" class="map-stage"></div>
+      <div id="continent-tooltip" class="map-tooltip"></div>
+      <div class="map-actions">
+        <a class="world-btn" href="./quiz.html?continent=world">World Quiz</a>
       </div>
     </div>
   </main>
+
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://unpkg.com/topojson-client@3"></script>
+  <script type="module" src="./index.js"></script>
 </body>
 </html>
