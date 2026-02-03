@@ -283,6 +283,7 @@ function startRound() {
   document.getElementById("main-prompt").innerText = targetData.name;
   document.getElementById("target-state").innerText = targetData.iso;
   document.getElementById("sub-prompt").innerText = "";
+  document.getElementById("mode-toggle").classList.remove("disabled");
   updateScoreUI();
 }
 
@@ -318,13 +319,21 @@ function transitionToCityPhase(geoData, id) {
 
   if (isCapitalMode) {
     targetCityName = data.capital;
-    document.getElementById("main-prompt").innerText = `Capital: ${targetCityName}`;
+    document.getElementById("main-prompt").innerText = "Capital";
   } else {
     const target = cityChoices[Math.floor(Math.random() * cityChoices.length)];
     targetCityName = target.name;
     document.getElementById("main-prompt").innerText = "Identify City";
     document.getElementById("sub-prompt").innerText = `"${target.fact}"`;
   }
+
+  // Lock to Capital mode and disable toggle during city phase
+  if (!isCapitalMode) {
+    isCapitalMode = true;
+    document.getElementById("mode-toggle").classList.add("active");
+    document.getElementById("mode-label").innerText = "Capital";
+  }
+  document.getElementById("mode-toggle").classList.add("disabled");
 
   plotCities(id, cityChoices);
   setTimeout(() => { d3.selectAll(".city-node").style("pointer-events", "auto"); }, 600);

@@ -222,8 +222,13 @@ body {
 .active .toggle-switch {
   background: var(--neon-blue);
 }
-.active .toggle-knob {
-  left: 21px;
+.active .toggle-knob { left: 21px; }
+
+.toggle-container.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  filter: grayscale(1);
+  cursor: not-allowed;
 }
 
 #prompt-container {
