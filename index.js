@@ -11,7 +11,6 @@ const SOURCES = {
 
 const mapContainer = document.getElementById("continent-map");
 const tooltip = document.getElementById("continent-tooltip");
-const statusEl = document.getElementById("map-status");
 
 const CONTINENTS = {
   "north-america": { label: "North America" },
@@ -30,13 +29,11 @@ async function init() {
   if (!mapContainer) return;
 
   if (!window.d3 || !window.topojson) {
-    setStatus("Map libraries failed to load");
     mapContainer.innerHTML = `<div class="map-error">D3 or TopoJSON failed to load.</div>`;
     return;
   }
 
   try {
-    setStatus("Loading map…");
     const topo = await fetchFirstOk(SOURCES.topo, "World Atlas");
     const countries = await fetchFirstOk(SOURCES.countries, "World Countries");
 
@@ -58,10 +55,8 @@ async function init() {
 
     buildSvg();
     render();
-    setStatus("");
   } catch (err) {
     console.error(err);
-    setStatus("Map failed to load");
     mapContainer.innerHTML = `<div class="map-error">${err.message}</div>`;
   }
 }
@@ -168,8 +163,4 @@ async function fetchFirstOk(urls, label) {
     }
   }
   throw new Error(`${label} failed on all sources. ${lastErr ? lastErr.message : ""}`);
-}
-
-function setStatus(text) {
-  statusEl.textContent = text;
 }
