@@ -21,6 +21,17 @@ let features = [];
 
 const mapPadding = { top: 90, right: 40, bottom: 40, left: 40 };
 
+// Dot sizing controls (screen-space targets)
+const DOT_SCREEN_BASE = 6;
+const DOT_SCREEN_EXP = 0.35;
+const DOT_SCREEN_MIN = 2;
+const DOT_SCREEN_MAX = 7;
+
+const HALO_SCREEN_BASE = 2;
+const HALO_SCREEN_EXP = 0.35;
+const HALO_SCREEN_MIN = 0.6;
+const HALO_SCREEN_MAX = 2.4;
+
 window.addEventListener("load", initGame);
 
 async function initGame() {
@@ -36,9 +47,8 @@ async function initGame() {
   zoom = d3.zoom().scaleExtent([1, 15]).on("zoom", (e) => {
     g.attr("transform", e.transform);
     currentScale = e.transform.k;
-    d3.selectAll(".city-node")
-      .attr("r", 6 / currentScale)
-      .attr("stroke-width", (2 / currentScale));
+
+    updateCityNodeStyle();
     d3.selectAll(".state").attr("stroke-width", 0.5 / currentScale);
   });
   svg.call(zoom);
@@ -202,6 +212,34 @@ async function fetchFirstOk(urls, label) {
   throw new Error(`${label} failed on all sources. ${lastErr ? lastErr.message : ""}`);
 }
 
+// --- DOT SIZE HELPERS ---
+function clamp(min, max, v) { return Math.max(min, Math.min(max, v)); }
+
+function getDotStyle() {
+  const screenR = clamp(
+    DOT_SCREEN_MIN,
+    DOT_SCREEN_MAX,
+    DOT_SCREEN_BASE / Math.pow(currentScale, DOT_SCREEN_EXP)
+  );
+  const screenStroke = clamp(
+    HALO_SCREEN_MIN,
+    HALO_SCREEN_MAX,
+    HALO_SCREEN_BASE / Math.pow(currentScale, HALO_SCREEN_EXP)
+  );
+
+  return {
+    r: screenR / currentScale,
+    stroke: screenStroke / currentScale
+  };
+}
+
+function updateCityNodeStyle() {
+  const { r, stroke } = getDotStyle();
+  d3.selectAll(".city-node")
+    .attr("r", r)
+    .attr("stroke-width", stroke);
+}
+
 // --- GAME LOGIC ---
 function startRound() {
   const keys = Object.keys(gameData);
@@ -276,6 +314,7 @@ function plotCapital(id) {
   if (!projected) return;
 
   const node = { name: data.capital, x: projected[0], y: projected[1] };
+  const { r, stroke } = getDotStyle();
 
   g.selectAll(".city-node")
     .data([node])
@@ -283,12 +322,13 @@ function plotCapital(id) {
     .attr("class", "city-node")
     .attr("cx", d => d.x)
     .attr("cy", d => d.y)
+    .attr("stroke-width", stroke)
     .attr("r", 0)
     .on("mouseover", showTooltip)
     .on("mousemove", moveTooltip)
     .on("mouseout", hideTooltip)
     .on("click", (e, d) => handleCapitalClick(e, d, id))
-    .transition().duration(500).delay(400).attr("r", 6 / currentScale);
+    .transition().duration(500).delay(400).attr("r", r);
 }
 
 function handleCapitalClick(event, cityNode, id) {
