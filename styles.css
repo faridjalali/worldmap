@@ -434,7 +434,7 @@ body {
 /* Back Button */
 .back-btn {
   position: absolute;
-  top: 43px; /* visual center alignment with HUD */
+  top: 53px; /* visual center alignment with HUD */
   left: 40px;
   width: 44px;
   height: 44px;
@@ -494,7 +494,9 @@ body {
     max-width: 320px;
     margin: 10px auto 10px; 
     text-align: center;
-    border-radius: 12px; /* Ensure consistent rectangular style */
+    border-radius: 12px !important; /* Ensure consistent rectangular style */
+    -webkit-appearance: none;
+    appearance: none;
     box-sizing: border-box;
   }
 
@@ -523,7 +525,7 @@ body {
   .hud-val { font-size: 1rem; }
   
   .back-btn {
-    top: 23px; /* Adjusted for mobile HUD top: 20px + padding/center */
+    top: 33px; /* Adjusted for mobile HUD top: +10px from previous */
     left: 10px;
     width: 36px;
     height: 36px;
