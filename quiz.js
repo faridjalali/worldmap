@@ -327,7 +327,7 @@ function resetGameRound() { startRound(); }
 function zoomToState(d) {
   const b = path.bounds(d);
   const dx = b[1][0] - b[0][0], dy = b[1][1] - b[0][1];
-  const x = (b[0][0] + b[1][0]) / 2, y = (b[0][1] + b[1][1]) / 2;
+  const x = (b[0][0] + b[1][0]) / 2, y = (b[0][0] + b[1][1]) / 2;
   const s = Math.max(1, Math.min(10, 0.7 / Math.max(dx / width, dy / height)));
   const t = [width / 2 - s * x, height / 2 - s * y];
   svg.transition().duration(1000).call(zoom.transform, d3.zoomIdentity.translate(t[0], t[1]).scale(s));
