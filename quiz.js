@@ -249,15 +249,15 @@ function getDotStyle() {
 
   return {
     r: screenR / currentScale,
-    stroke: 0
+    strokeWidth: 0
   };
 }
 
 function updateCityNodeStyle() {
-  const { r, stroke } = getDotStyle();
+  const { r, strokeWidth } = getDotStyle();
   d3.selectAll(".city-node")
     .attr("r", r)
-    .attr("stroke-width", stroke);
+    .attr("stroke-width", strokeWidth);
 }
 
 // --- GAME LOGIC ---
@@ -336,7 +336,7 @@ function plotCities(id, cityChoices) {
     return projected ? { name: c.name, x: projected[0], y: projected[1] } : null;
   }).filter(Boolean);
 
-  const { r, stroke } = getDotStyle();
+  const { r, strokeWidth } = getDotStyle();
 
   g.selectAll(".city-node")
     .data(nodes)
@@ -344,7 +344,7 @@ function plotCities(id, cityChoices) {
     .attr("class", "city-node")
     .attr("cx", d => d.x)
     .attr("cy", d => d.y)
-    .attr("stroke-width", stroke)
+    .attr("stroke-width", strokeWidth)
     .attr("r", 0)
     .on("mouseover", showTooltip)
     .on("mousemove", moveTooltip)
