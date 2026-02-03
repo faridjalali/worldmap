@@ -1,7 +1,12 @@
 const URLS = {
-  topo: "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json",
-  tsv: "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.tsv",
-  rest: "https://restcountries.com/v3.1/all?fields=name,cca3,region,subregion,capital,capitalInfo,population,area,languages,currencies"
+  topo: [
+    "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json",
+    "https://unpkg.com/world-atlas@2/countries-110m.json"
+  ],
+  rest: [
+    "https://restcountries.com/v3.1/all?fields=name,cca3,region,subregion,capital,capitalInfo,population,area,languages,currencies",
+    "https://restcountries.com/v3.1/all"
+  ]
 };
 
 const continentParam = new URLSearchParams(window.location.search).get("continent") || "world";
@@ -39,35 +44,29 @@ async function initGame() {
   document.getElementById("mode-toggle").onclick = toggleMode;
 
   try {
-    const [topo, tsvText, rest] = await Promise.all([
-      fetch(URLS.topo).then(r => r.json()),
-      fetch(URLS.tsv).then(r => r.text()),
-      fetch(URLS.rest).then(r => r.json())
-    ]);
+    const topo = await fetchFirstOk(URLS.topo, "TopoJSON");
+    const rest = await fetchFirstOk(URLS.rest, "RestCountries");
 
-    const nameById = new Map();
-    d3.tsvParse(tsvText, d => {
-      nameById.set(d.id, d.name);
-    });
-
-    const restByName = buildRestLookup(rest);
     const world = topojson.feature(topo, topo.objects.countries);
     features = world.features;
 
-    gameData = buildGameData(features, nameById, restByName, continentParam);
+    const restByName = buildRestLookup(rest);
+    gameData = buildGameData(features, restByName, continentParam);
 
     if (Object.keys(gameData).length === 0) {
       throw new Error("No countries matched for this continent.");
     }
 
+    const filteredFeatures = features.filter(f => gameData[f.id]);
+
     projection = d3.geoMercator().fitSize([width, height * 0.9], {
       type: "FeatureCollection",
-      features: features.filter(f => gameData[f.id])
+      features: filteredFeatures
     });
     path = d3.geoPath().projection(projection);
 
     g.selectAll("path")
-      .data(features.filter(f => gameData[f.id]))
+      .data(filteredFeatures)
       .enter().append("path")
       .attr("d", path)
       .attr("class", "state")
@@ -78,8 +77,22 @@ async function initGame() {
   } catch (err) {
     console.error(err);
     document.getElementById("main-prompt").innerText = "Error Loading Map";
-    document.getElementById("sub-prompt").innerText = "Check internet connection or data sources.";
+    document.getElementById("sub-prompt").innerText = err.message;
   }
+}
+
+async function fetchFirstOk(urls, label) {
+  let lastErr = null;
+  for (const url of urls) {
+    try {
+      const res = await fetch(url, { mode: "cors" });
+      if (!res.ok) throw new Error(`${label} fetch failed (${res.status}) from ${url}`);
+      return await res.json();
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  throw new Error(`${label} fetch failed on all sources. ${lastErr ? lastErr.message : ""}`);
 }
 
 function buildRestLookup(restCountries) {
@@ -92,10 +105,10 @@ function buildRestLookup(restCountries) {
   return map;
 }
 
-function buildGameData(features, nameById, restByName, continent) {
+function buildGameData(features, restByName, continent) {
   const data = {};
   for (const f of features) {
-    const name = nameById.get(f.id);
+    const name = f?.properties?.name;
     if (!name) continue;
 
     const rest = resolveCountry(name, restByName);
