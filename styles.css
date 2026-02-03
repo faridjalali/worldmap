@@ -7,7 +7,13 @@
   --neon-amber: #ffaa00;
   --glass: rgba(15, 15, 15, 0.85);
   --font-main: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --card: rgba(20, 20, 20, 0.95);
+
+  --c-na: rgba(255, 120, 120, 0.55);
+  --c-sa: rgba(255, 195, 120, 0.55);
+  --c-eu: rgba(140, 200, 255, 0.55);
+  --c-af: rgba(120, 255, 190, 0.55);
+  --c-as: rgba(190, 160, 255, 0.55);
+  --c-oc: rgba(255, 150, 220, 0.55);
 }
 
 * { box-sizing: border-box; }
@@ -102,107 +108,6 @@ body {
 }
 
 /* Landing page */
-.landing { overflow: auto; }
-.landing-wrap {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 60px 20px;
-  background: radial-gradient(1000px 500px at 50% -10%, rgba(0,243,255,0.15), transparent 60%),
-              linear-gradient(180deg, #050505, #0c0c0c);
-}
-.landing-title { font-size: 3rem; margin: 0; }
-.landing-subtitle { color: #bbb; margin-top: 8px; margin-bottom: 30px; }
-.continent-grid {
-  display: grid;
-  gap: 14px;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  width: min(800px, 92vw);
-}
-.continent-card {
-  background: var(--card);
-  border: 1px solid rgba(255,255,255,0.08);
-  padding: 18px 20px;
-  text-align: center;
-  text-decoration: none;
-  color: white;
-  border-radius: 16px;
-  transition: transform 0.2s, border-color 0.2s;
-}
-.continent-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--neon-blue);
-}
-
-.map-wrap {
-  width: min(1000px, 94vw);
-  margin: 20px auto 0;
-  display: grid;
-  gap: 14px;
-  justify-items: center;
-}
-
-.world-map {
-  width: 100%;
-  height: auto;
-  filter: drop-shadow(0 18px 60px rgba(0, 243, 255, 0.08));
-}
-
-.continent-link { cursor: pointer; }
-.continent {
-  fill: rgba(120, 180, 220, 0.32);
-  stroke: rgba(255, 255, 255, 0.2);
-  stroke-width: 2;
-  transition: transform 0.2s ease, fill 0.2s ease, stroke 0.2s ease, filter 0.2s ease;
-  transform-origin: center;
-}
-.continent:hover {
-  fill: rgba(0, 243, 255, 0.4);
-  stroke: rgba(0, 243, 255, 0.9);
-  filter: drop-shadow(0 0 12px rgba(0,243,255,0.6));
-}
-
-.c-na { fill: rgba(255, 150, 150, 0.35); }
-.c-sa { fill: rgba(255, 210, 120, 0.35); }
-.c-eu { fill: rgba(170, 200, 255, 0.35); }
-.c-af { fill: rgba(180, 255, 170, 0.35); }
-.c-as { fill: rgba(200, 180, 255, 0.35); }
-.c-oc { fill: rgba(255, 180, 230, 0.35); }
-.c-world { fill: rgba(0, 243, 255, 0.25); }
-
-.world-text {
-  font-size: 16px;
-  fill: white;
-  font-weight: 700;
-  letter-spacing: 1px;
-  pointer-events: none;
-}
-
-.map-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px 16px;
-  justify-content: center;
-  color: #bbb;
-  font-size: 0.9rem;
-}
-.legend-item { padding: 4px 10px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.08); }
-.legend-item.na { color: #ffb0b0; }
-.legend-item.sa { color: #ffd28a; }
-.legend-item.eu { color: #b5d6ff; }
-.legend-item.af { color: #b6ffc0; }
-.legend-item.as { color: #d2b8ff; }
-.legend-item.oc { color: #ffc1e6; }
-
-:root {
-  --c-na: rgba(255, 120, 120, 0.55);
-  --c-sa: rgba(255, 195, 120, 0.55);
-  --c-eu: rgba(140, 200, 255, 0.55);
-  --c-af: rgba(120, 255, 190, 0.55);
-  --c-as: rgba(190, 160, 255, 0.55);
-  --c-oc: rgba(255, 150, 220, 0.55);
-}
-
 .landing {
   overflow: hidden;
   background: radial-gradient(1200px 600px at 50% -10%, rgba(0,243,255,0.15), transparent 60%),
@@ -217,25 +122,11 @@ body {
   padding: 40px 16px 60px;
 }
 
-.landing-header {
-  text-align: center;
-}
+.landing-header { text-align: center; }
 
-.landing-title {
-  font-size: clamp(2.3rem, 4vw, 3.5rem);
-  margin: 0;
-}
-
-.landing-subtitle {
-  color: #bbb;
-  margin-top: 8px;
-}
-
-.landing-status {
-  margin-top: 8px;
-  font-size: 0.95rem;
-  color: rgba(255,255,255,0.65);
-}
+.landing-title { font-size: clamp(2.3rem, 4vw, 3.5rem); margin: 0; }
+.landing-subtitle { color: #bbb; margin-top: 8px; }
+.landing-status { margin-top: 8px; font-size: 0.95rem; color: rgba(255,255,255,0.65); }
 
 .map-card {
   width: min(1100px, 95vw);
@@ -250,11 +141,14 @@ body {
 
 .map-stage {
   width: 100%;
-  height: min(70vh, 560px);
+  height: 70vh;
+  max-height: 560px;
+  min-height: 360px;
   position: relative;
 }
 
 .world-svg {
+  display: block;
   width: 100%;
   height: 100%;
 }
@@ -266,9 +160,7 @@ body {
   transition: fill 0.2s, opacity 0.2s, stroke 0.2s;
 }
 
-.country.dim {
-  opacity: 0.15;
-}
+.country.dim { opacity: 0.15; }
 
 .country.highlight {
   opacity: 1;
@@ -320,4 +212,3 @@ body {
   padding: 30px;
   font-size: 1rem;
 }
-
