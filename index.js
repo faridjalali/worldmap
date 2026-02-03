@@ -49,9 +49,10 @@ async function init() {
     const world = topojson.feature(topo, topo.objects.countries);
     features = world.features
       .map(f => {
-        const meta = byCcn3.get(f.id);
+        const idKey = pad3(f.id);
+        const meta = byCcn3.get(idKey);
         const continent = meta ? resolveContinent(meta) : null;
-        return { ...f, __meta: meta, __continent: continent };
+        return { ...f, __id: idKey, __meta: meta, __continent: continent };
       })
       .filter(f => f.__continent);
 
@@ -79,6 +80,8 @@ function buildSvg() {
     .append("path")
     .attr("class", "country")
     .attr("data-continent", d => d.__continent)
+    .attr("fill", "rgba(120,180,220,0.25)")
+    .attr("stroke", "rgba(255,255,255,0.15)")
     .on("mouseover", handleHover)
     .on("mousemove", moveTooltip)
     .on("mouseout", clearHover)
