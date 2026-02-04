@@ -436,7 +436,7 @@ function handleStateClick(event, d) {
     flashState(this, "wrong");
     const wrongName = gameData[clickedID].name;
     document.getElementById("sub-prompt").innerHTML =
-      `That is <span style="color:var(--neon-amber)">${wrongName}</span>. Try again.`;
+      `That is <span style="color:#000000; font-weight:bold;">${wrongName}</span>. Try again.`;
   }
 }
 
@@ -516,7 +516,7 @@ function handleCityClick(event, cityNode, id) {
       showFact(cityNode.name, id, "INCORRECT", "status-wrong", clickedCityFact, "Try Again", closeOverlay);
     } else {
        // Capital mode - standard feedback
-       document.getElementById("sub-prompt").innerHTML = `That is <span style="color:var(--neon-amber)">${cityNode.name}</span>. Try again.`;
+       document.getElementById("sub-prompt").innerHTML = `That is <span style="color:#000000; font-weight:bold;">${cityNode.name}</span>. Try again.`;
     }
   }
 }

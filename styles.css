@@ -297,7 +297,7 @@ body {
 }
 #sub-prompt {
   font-size: 1.1rem;
-  color: var(--neon-blue);
+  color: #000000; /* Black for visibility */
   margin-top: 8px;
 }
 
