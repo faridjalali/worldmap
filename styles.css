@@ -415,8 +415,8 @@ body {
 
 .country {
   fill: #d0d0d0; /* Default Grey/Paper color */
-  stroke: rgba(255, 255, 255, 0.6);
-  stroke-width: 0.5;
+  stroke: var(--map-stroke);
+  stroke-width: 0.5px;
   transition:
     fill 0.2s,
     opacity 0.2s,
