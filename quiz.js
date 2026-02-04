@@ -26,10 +26,10 @@ let cityDB = {};
 const mapPadding = { top: 90, right: 40, bottom: 40, left: 40 };
 
 // Dot sizing controls (screen-space targets)
-const DOT_SCREEN_BASE = 6;
+const DOT_SCREEN_BASE = 12; // Doubled from 6
 const DOT_SCREEN_EXP = 0.35;
-const DOT_SCREEN_MIN = 2;
-const DOT_SCREEN_MAX = 7;
+const DOT_SCREEN_MIN = 4;   // Doubled from 2
+const DOT_SCREEN_MAX = 14;  // Doubled from 7
 
 window.addEventListener("load", initGame);
 
@@ -390,8 +390,8 @@ function getDotStyle() {
 
 function updateCityNodeStyle() {
   const { r } = getDotStyle();
-  d3.selectAll(".city-node")
-    .attr("r", r);
+  d3.selectAll(".city-node").attr("r", r);
+  d3.selectAll(".city-halo").attr("r", r);
 }
 
 // --- GAME LOGIC ---
