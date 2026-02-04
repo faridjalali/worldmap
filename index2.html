@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>World Map Quiz</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, user-scalable=no"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+    <style>
+      body {
+        margin: 0;
+        background: #050505;
+        color: #fff;
+        font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      #continent-map {
+        min-height: 360px;
+      }
+    </style>
+  </head>
+  <body class="landing">
+    <main class="landing-shell">
+      <div class="landing-header">
+        <h1 class="landing-title">World Map Quiz</h1>
+      </div>
+
+      <a class="world-btn top-right" href="./quiz.html?continent=world"
+        >Entire World</a
+      >
+
+      <!-- Mobile-only continent list -->
+      <div id="mobile-continent-list" class="mobile-list">
+        <a class="world-btn" href="./quiz.html?continent=world">Entire World</a>
+        <a class="world-btn" href="./quiz.html?continent=north-america"
+          >North America</a
+        >
+        <a class="world-btn" href="./quiz.html?continent=south-america"
+          >South America</a
+        >
+        <a class="world-btn" href="./quiz.html?continent=europe">Europe</a>
+        <a class="world-btn" href="./quiz.html?continent=africa">Africa</a>
+        <a class="world-btn" href="./quiz.html?continent=asia">Asia</a>
+        <a class="world-btn" href="./quiz.html?continent=oceania">Oceania</a>
+      </div>
+
+      <div id="continent-map" class="map-stage"></div>
+      <div id="continent-tooltip" class="map-tooltip"></div>
+    </main>
+
+    <script src="https://d3js.org/d3.v7.min.js" defer></script>
+    <script src="https://unpkg.com/topojson-client@3" defer></script>
+    <script type="module" src="./landing-globe.js"></script>
+  </body>
+</html>
