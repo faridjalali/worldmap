@@ -118,21 +118,36 @@ async function initGame() {
     // Draw cities
     // Only show capitals for the active countries in this quiz
     const activeCountryIds = new Set(filteredFeatures.map(f => pad3(f.id)));
-    const activeCities = window.gameData.capitals.filter(c => activeCountryIds.has(pad3(c.countryId)));
+    // CLONE the cities to avoid mutating the global gameData across re-renders
+    const activeCities = window.gameData.capitals
+      .filter(c => activeCountryIds.has(pad3(c.countryId)))
+      .map(c => ({ ...c, latlng: [...c.latlng] })); 
 
     // Correction: Apply same shifts to Cities as we did to Land Geometry
     if (continentParam === "oceania") {
        activeCities.forEach(c => {
-         // Fiji (242): Shift -15 lon
-         if (pad3(c.countryId) === "242") {
-            c.lng -= 15;
+         const cid = pad3(c.countryId);
+         
+         // Fiji (242): Shift -15 lon to match geometry shift
+         if (cid === "242") {
+            c.latlng[1] -= 15; // lng is index 1 in latlng array [lat, lng]
+            c.lng -= 15;       // Update flat property if used
          }
-         // Vanuatu (548): Check if user was right. 
-         // I reviewed the code: I ONLY shifted Fiji (242). 
-         // However, if the user sees Vanuatu off, maybe they mean the map data itself is misaligned?
-         // For now, I will trust my code history that only Fiji was shifted.
-         // If Vanuatu is "off", it might be a data quality issue in the source TopoJSON/CSV.
-         // But per the specific "shifting" logic, only Fiji needs this patch.
+         
+         // Vanuatu (548): Snap to visible geometry centroid
+         // The real capital (Port Vila) is on Efate, which might be missing in 110m map.
+         // We move the dot to the center of the LARGEST visible island.
+         if (cid === "548") {
+             const vFeature = filteredFeatures.find(f => pad3(f.id) === "548");
+             if (vFeature) {
+                 // Use D3 centroid of the geometry which guarantees being "on" the shape broadly
+                 const center = d3.geoCentroid(vFeature);
+                 // Center is [lng, lat]
+                 c.latlng = [center[1], center[0]]; // [lat, lng]
+                 c.lng = center[0];
+                 c.lat = center[1];
+             }
+         }
        });
     }
 
@@ -142,8 +157,8 @@ async function initGame() {
       .append("circle")
       .attr("class", "city-node")
       .attr("r", 2) // Base radius, scaled dynamically later
-      .attr("cx", d => projection([d.lng, d.lat])[0])
-      .attr("cy", d => projection([d.lng, d.lat])[1])
+      .attr("cx", d => projection([d.latlng[1], d.latlng[0]])[0])
+      .attr("cy", d => projection([d.latlng[1], d.latlng[0]])[1])
       .attr("id", d => "city-" + d.id)
       .on("click", handleCityClick);
 
