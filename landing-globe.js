@@ -88,8 +88,8 @@ async function initGlobe() {
   // Setup Orthographic Projection
   // Setup Orthographic Projection
   const size = Math.min(width, height);
-  const isMobile = window.innerWidth < 768; // Simple check for mobile width
-  const scaleFactor = isMobile ? 0.96 : 0.9; // 0.96 for mobile (tight margins), 0.9 for desktop
+  const isMobile = window.innerWidth < 768; 
+  const scaleFactor = isMobile ? 0.99 : 0.9; // Practically full width on mobile
   const scale = (size / 2) * scaleFactor;
 
   projection = d3.geoOrthographic()
