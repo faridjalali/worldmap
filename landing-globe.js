@@ -35,8 +35,12 @@ async function initGlobe() {
   g = svg.append("g");
 
   // Setup Orthographic Projection (3D Globe)
+  // Responsive Scale: Fit within the smaller dimension
+  const size = Math.min(width, height);
+  const scale = (size / 2) * 0.9;
+
   projection = d3.geoOrthographic()
-    .scale(height / 2.5)
+    .scale(scale)
     .center([0, 0])
     .translate([width / 2, height / 2])
     .clipAngle(90); // Clips back-face
@@ -130,16 +134,19 @@ function render() {
     .merge(countries)
     .attr("d", path)
     .attr("data-continent", d => d.properties.continent)
-    // Apply Traditional Colors
-    .attr("fill", d => GLOBE_COLORS.continents[d.properties.continent] || GLOBE_COLORS.default)
-    .attr("stroke", GLOBE_COLORS.stroke)
+    // Apply Traditional Colors using STYLE to override CSS
+    .style("fill", d => GLOBE_COLORS.continents[d.properties.continent] || GLOBE_COLORS.default)
+    .style("stroke", GLOBE_COLORS.stroke)
     .on("mouseover", function(e, d) {
        if (isDragging) return;
        const cont = d.properties.continent;
        if (!cont) return;
        
        // Highlight (brighten) all countries in this continent
-       d3.selectAll(`.country[data-continent='${cont}']`).style("filter", "brightness(1.3)");
+       d3.selectAll(`.country[data-continent='${cont}']`)
+         .style("filter", "brightness(1.5)") // Popped/Brighter
+         .style("stroke", "rgba(255,255,255,0.8)") // Add white border pop
+         .style("stroke-width", "1px");
        
        // Show Tooltip
        const tt = document.getElementById("continent-tooltip");
@@ -151,7 +158,10 @@ function render() {
     .on("mouseout", function(e, d) {
        const cont = d.properties.continent;
        if (cont) {
-          d3.selectAll(`.country[data-continent='${cont}']`).style("filter", null);
+          d3.selectAll(`.country[data-continent='${cont}']`)
+            .style("filter", null)
+            .style("stroke", GLOBE_COLORS.stroke)
+            .style("stroke-width", null);
        }
        document.getElementById("continent-tooltip").style.opacity = 0;
     })
@@ -177,11 +187,17 @@ function startRotation() {
 function handleResize() {
   if (!svg) return;
   const container = document.getElementById("continent-map");
+  if (!container) return;
+  
   width = container.clientWidth;
   height = container.clientHeight;
   
+  // Responsive Scale: Fit within the smaller dimension with some padding
+  const size = Math.min(width, height);
+  const scale = (size / 2) * 0.9; // 90% of radius
+
   svg.attr("viewBox", `0 0 ${width} ${height}`);
-  projection.translate([width / 2, height / 2]).scale(height / 2.5);
+  projection.translate([width / 2, height / 2]).scale(scale);
   render();
 }
 
