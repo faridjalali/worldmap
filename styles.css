@@ -309,7 +309,8 @@ body {
   transition: opacity 0.3s;
 }
 #sub-prompt.show {
-  opacity: 1;
+  opacity: 1 !important;
+  visibility: visible !important;
 }
 
 #fact-overlay {

@@ -444,8 +444,11 @@ function handleStateClick(event, d) {
 let feedbackTimer;
 function showFeedback(html) {
   const el = document.getElementById("sub-prompt");
+  if (!el) return;
   el.innerHTML = html;
   el.classList.add("show");
+  // Force reflow to ensure transition? Not usually needed but safety.
+  void el.offsetWidth;
   
   if (feedbackTimer) clearTimeout(feedbackTimer);
   feedbackTimer = setTimeout(() => {
