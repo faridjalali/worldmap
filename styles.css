@@ -51,7 +51,9 @@ body {
   stroke-opacity: 1;
   transition:
     fill 0.3s,
-    opacity 0.3s;
+    opacity 0.3s,
+    filter 0.3s,
+    stroke 0.3s;
   vector-effect: non-scaling-stroke;
   fill: rgba(120, 180, 220, 0.4);
 }
@@ -88,6 +90,7 @@ body {
   stroke-width: 1px; /* Full Thickness */
   -webkit-filter: brightness(0.6); /* Safari Support */
   filter: brightness(0.6);
+  transform: translateZ(0); /* Force GPU Repaint for Safari */
 }
 
 .country.highlight {
