@@ -409,7 +409,7 @@ function startRound() {
   currentPhase = "MAP_SELECTION";
   resetZoom();
   d3.selectAll(".state").classed("active-focused", false);
-  d3.selectAll(".city-node").remove();
+  d3.selectAll(".city-node, .city-halo").remove();
   document.getElementById("fact-overlay").classList.remove("show");
 
   const targetData = gameData[currentTargetID];
@@ -494,6 +494,9 @@ function plotCities(id, cityChoices) {
     const projected = projection([c.latlng[1], c.latlng[0]]);
     return projected ? { name: c.name, x: projected[0], y: projected[1] } : null;
   }).filter(Boolean);
+
+  // Clear previous cities/halos to prevent duplicates/artifacts
+  d3.selectAll(".city-node, .city-halo").remove();
 
   const { r } = getDotStyle();
 
