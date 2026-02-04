@@ -77,6 +77,14 @@ body {
   fill: var(--c-oc);
 }
 
+/* Darker variants for Zoomed/Active State (Safari-safe) */
+.state.active-focused[data-continent="north-america"] { fill: #8A7451; }
+.state.active-focused[data-continent="south-america"] { fill: #657750; }
+.state.active-focused[data-continent="europe"]        { fill: #82625C; }
+.state.active-focused[data-continent="africa"]        { fill: #8B8263; }
+.state.active-focused[data-continent="asia"]          { fill: #76624F; }
+.state.active-focused[data-continent="oceania"]       { fill: #5C7085; }
+
 .state:hover {
   opacity: 0.9;
   stroke: #000000; /* Force black on hover */
@@ -88,9 +96,7 @@ body {
   opacity: 1;
   stroke: #000000; /* Force Black */
   stroke-width: 1px; /* Full Thickness */
-  -webkit-filter: brightness(0.6); /* Safari Support */
-  filter: brightness(0.6);
-  transform: translateZ(0); /* Force GPU Repaint for Safari */
+  /* Filter removed -> replaced by explicit fill changes above */
 }
 
 .country.highlight {
