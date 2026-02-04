@@ -482,29 +482,18 @@ function adjustContinentGeometry(features, continent) {
     const id = pad3(f.id);
 
     if (continent === "europe") {
-      // France (250): Remove French Guiana (South America)
-      // Filter out polygons with significantly negative longitude (West of -20)
-      if (id === "250" && f.geometry && f.geometry.type === "MultiPolygon") {
+      // France (250) and Russia (643): Remove Western Hemisphere territories
+      // Filter out polygons with any point West of -40 longitude.
+      // - French Guiana (~-53) -> Removed
+      // - Alaska Tip (~-170) -> Removed
+      // - Kaliningrad (~20) -> Kept
+      // - Mainland (~-5 to 180) -> Kept
+      if (["250", "643"].includes(id) && f.geometry && f.geometry.type === "MultiPolygon") {
         f.geometry.coordinates = f.geometry.coordinates.filter(polygon => {
-          const centroid = d3.geoCentroid({type: "Polygon", coordinates: polygon});
-          return centroid[0] > -20;
-        });
-      }
-
-      // Russia (643): Remove parts near Alaska (Western Hemisphere)
-      // Filter out polygons that appear on the far left (negative longitude, e.g. -170)
-      if (id === "643" && f.geometry && f.geometry.type === "MultiPolygon") {
-        f.geometry.coordinates = f.geometry.coordinates.filter(polygon => {
-          // Calculate average longitude of the exterior ring to be robust
           const ring = polygon[0];
-          let sumLon = 0;
-          for (let i = 0; i < ring.length; i++) {
-            sumLon += ring[i][0];
-          }
-          const avgLon = sumLon / ring.length;
-          
-          // Russian mainland is positive longitude (average > 0). Alaska tip is negative.
-          return avgLon > -20; // Use -20 as a safe buffer (Mainland is > 20E)
+          // Rigid check: If any point is < -40, implies it's far west.
+          const hasWesternPoint = ring.some(pt => pt[0] < -40);
+          return !hasWesternPoint;
         });
       }
     }
