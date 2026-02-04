@@ -65,6 +65,31 @@ async function initGame() {
       byCcn3.set(pad3(c.ccn3), c);
     }
 
+    // MANUAL INJECTION: Ensure Kosovo (383) exists in metadata if missing
+    if (!byCcn3.has("383")) {
+      byCcn3.set("383", {
+        name: { common: "Kosovo", official: "Republic of Kosovo" },
+        cca3: "XKX",
+        ccn3: "383",
+        region: "Europe",
+        subregion: "Southeast Europe",
+        capital: ["Pristina"],
+        latlng: [42.6, 20.9]
+      });
+    }
+
+    // MANUAL INJECTION: Ensure Kosovo has cities so it passes the 'playable' filter
+    if (!cityDB["383"] || !cityDB["383"].cities || cityDB["383"].cities.length < 3) {
+       cityDB["383"] = {
+         cities: [
+           { name: "Pristina", latlng: [42.6629, 21.1655], fact: "Pristina is the capital and largest city." },
+           { name: "Prizren", latlng: [42.2141, 20.7365], fact: "Prizren is a historic city known for its fortress." },
+           { name: "Peja", latlng: [42.6594, 20.2887], fact: "Peja is located near the Rugova Canyon." },
+           { name: "Gjakova", latlng: [42.3804, 20.4309], fact: "Gjakova has a well-preserved Old Bazaar." }
+         ]
+       };
+    }
+
     const world = topojson.feature(topo, topo.objects.countries);
     features = world.features;
 

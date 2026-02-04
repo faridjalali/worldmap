@@ -80,6 +80,16 @@ async function initGlobe() {
       if (c.ccn3) byCcn3.set(pad3(c.ccn3), c);
     });
 
+    // MANUAL INJECTION: Ensure Kosovo (383) exists for Globe
+    if (!byCcn3.has("383")) {
+      byCcn3.set("383", {
+        name: { common: "Kosovo" },
+        ccn3: "383",
+        region: "Europe",
+        subregion: "Southeast Europe"
+      });
+    }
+
     const world = topojson.feature(topo, topo.objects.countries);
     features = world.features;
 
