@@ -86,7 +86,8 @@ body {
   opacity: 1;
   stroke: #000000; /* Force Black */
   stroke-width: 1px; /* Full Thickness */
-  filter: brightness(0.6); /* Darker shade for highlight */
+  -webkit-filter: brightness(0.6); /* Safari Support */
+  filter: brightness(0.6);
 }
 
 .country.highlight {
@@ -314,7 +315,8 @@ body {
   margin-top: 15px;
   font-weight: 600;
   opacity: 0; /* Hidden by default */
-  transition: opacity 0.3s;
+  visibility: hidden; /* Ensure it's ignored by clicks too */
+  transition: opacity 0.3s, visibility 0.3s;
 }
 
 #sub-prompt.show, #sub-prompt.persist {
