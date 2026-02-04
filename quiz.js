@@ -79,10 +79,33 @@ async function initGame() {
     // Special Handling: Geometry adjustments for cleaner zoom
     adjustContinentGeometry(filteredFeatures, continentParam);
 
+    // Filter features for "Fit Extent" only
+    // This allows us to exclude distant territories (like Russia's Alaska tip) from the zoom calculation
+    // while keeping them in the actual rendered map (off-screen logic).
+    let featuresForFitting = filteredFeatures;
+    if (continentParam === "europe") {
+      featuresForFitting = filteredFeatures.map(f => {
+        const id = pad3(f.id);
+        if (id === "643") { // Russia
+           // Create a clone to modify for fitting purposes only
+           const clone = JSON.parse(JSON.stringify(f));
+           if (clone.geometry && clone.geometry.type === "MultiPolygon") {
+              clone.geometry.coordinates = clone.geometry.coordinates.filter(poly => {
+                 // Exclude polygon if any point is < -40 (Western Hemisphere / Alaska Tip)
+                 const ring = poly[0];
+                 return !ring.some(pt => pt[0] < -40);
+              });
+           }
+           return clone;
+        }
+        return f;
+      });
+    }
+
     const vp = getMapViewport();
     projection = d3.geoMercator().fitExtent([[vp.x0, vp.y0], [vp.x1, vp.y1]], {
       type: "FeatureCollection",
-      features: filteredFeatures
+      features: featuresForFitting
     });
     path = d3.geoPath().projection(projection);
 
@@ -491,31 +514,7 @@ function adjustContinentGeometry(features, continent) {
         });
       }
 
-      // Russia (643): STITCH Alaska tip (-170) to East (190)
-      if (id === "643" && f.geometry) {
-        // Recursive function to shift points in a structure
-        const shiftRecursive = (coords, depth) => {
-          // Depth 0: [x, y] -> Shift if x < -20
-          if (depth === 0) {
-            if (coords[0] < -20) coords[0] += 360;
-            return;
-          }
-          // Recursively traverse
-          for (const child of coords) {
-            shiftRecursive(child, depth - 1);
-          }
-        };
-
-        if (f.geometry.type === "MultiPolygon") {
-          // MultiPolygon: [Polygon, Polygon...]
-          // Polygon: [Ring, Ring...]
-          // Ring: [Point, Point...] -> Depth 3 from MultiPolygon root
-          shiftRecursive(f.geometry.coordinates, 3);
-        } else if (f.geometry.type === "Polygon") {
-          // Polygon: [Ring, Ring...] -> Depth 2 from Polygon root
-          shiftRecursive(f.geometry.coordinates, 2);
-        }
-      }
+      // Russia (643): Logic removed (Handled by Viewport Fitting instead)
     }
 
     if (continent === "oceania") {
