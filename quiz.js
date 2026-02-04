@@ -525,6 +525,14 @@ function handleCityClick(event, cityNode, id) {
   if (isCorrect) {
     dot.classed("correct-choice", true);
     score += 20; updateScoreUI();
+    
+    // Clear the Fact Pillbox immediately on success
+    const sp = document.getElementById("sub-prompt");
+    if (sp) {
+       sp.innerText = "";
+       sp.classList.remove("persist", "show");
+    }
+    
     const correctFact = isCapitalMode ? `Capital of ${data.name}` : clickedCityFact;
     showFact(cityNode.name, id, "CORRECT", "status-correct", correctFact);
   } else {
