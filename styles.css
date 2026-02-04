@@ -18,6 +18,8 @@
   --c-af: #e8d8a5; /* Desert Yellow */
   --c-as: #c4a484; /* Earthy Brown */
   --c-oc: #99badd; /* Light Blue/Teal */
+  
+  color-scheme: dark; /* Hint to browser to use dark UA styles */
 }
 
 * {
@@ -470,11 +472,12 @@ body {
 .world-btn {
   display: inline-block;
   background: var(--neon-blue);
-  color: #000;
+  color: #000000 !important;
+  -webkit-text-fill-color: #000000;
   text-decoration: none;
   font-weight: 800;
   padding: 12px 24px;
-  border-radius: 12px; /* Rectangular style */
+  border-radius: 12px;
   text-transform: uppercase;
   letter-spacing: 1px;
 }
