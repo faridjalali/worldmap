@@ -651,34 +651,35 @@ body {
     top: 20px; /* Reduced top spacing for mobile */
   }
   
-  /* Supersized Mobile HUD (Scaled down 35% from previous) */
+  /* Supersized Mobile HUD (Narrower but Sleeker) */
   #top-hud {
-    padding: 10px 5px; /* Reduced vertical padding */
-    gap: 4px;
-    width: 90%; /* Slightly less width to feel smaller */
-    border-radius: 20px; 
-    justify-content: space-evenly;
+    padding: 12px 15px; /* More side padding for sleek look */
+    gap: 2px;
+    width: 88%; /* Significantly narrower */
+    border-radius: 30px; 
+    justify-content: space-between; /* Spread items nicely */
   }
   
   .hud-item { 
-    font-size: 0.55rem; /* Small but legible */
-    letter-spacing: 0.5px; 
+    font-size: 0.7rem; /* Increased size (Target/Score/Capital) */
+    letter-spacing: 0.5px;
+    font-weight: 700;
   }
   .hud-val { 
-    font-size: 1.0rem; /* Standardized size */
+    font-size: 1.1rem; /* Balanced with new width */
   }
 
-  /* Back Button (Kept same as requested) */
+  /* Back Button */
   .back-btn {
-    left: 5px;
-    width: 40px; 
-    height: 40px;
+    left: 8px;
+    width: 42px; 
+    height: 42px;
   }
-  .back-btn svg { width: 22px; height: 22px; }
+  .back-btn svg { width: 24px; height: 24px; }
 
-  /* Supersized Prompts (Kept same) */
+  /* Prompts */
   #prompt-container {
-    top: 100px; /* Pulled up to match smaller HUD */
+    top: 105px; 
     padding: 0 10px;
   }
   #find-label {
@@ -686,16 +687,16 @@ body {
     letter-spacing: 2px;
   }
   #main-prompt {
-    font-size: 2.4rem; 
+    font-size: 2.3rem; 
     line-height: 1.1;
   }
   
-  /* Feedback Pillbox (Scaled down 35%) */
+  /* Feedback Pillbox (Significantly Narrower) */
   #sub-prompt {
-    font-size: 0.85rem; /* Compact feedback */
-    padding: 8px 20px;
-    border-radius: 30px;
-    width: 85%; 
+    font-size: 0.9rem;
+    padding: 10px 25px; /* Healthy side margins */
+    border-radius: 40px;
+    width: 75%; /* Much narrower */
     box-shadow: 0 3px 10px rgba(0,0,0,0.5);
   }
 
