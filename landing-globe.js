@@ -53,7 +53,7 @@ async function initGlobe() {
       isDragging = true;
       if (rotationTimer) rotationTimer.stop();
       // Important to stop default browser scrolling on touch
-      if (event.sourceEvent.type.startsWith("touch")) {
+      if (event.sourceEvent && event.sourceEvent.type && event.sourceEvent.type.startsWith("touch")) {
          // event.sourceEvent.preventDefault(); // Passive listener issue?
          // D3 usually handles this if we don't set passive true elsewhere.
       }
