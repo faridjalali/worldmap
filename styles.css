@@ -561,15 +561,32 @@ body {
 
 .world-btn {
   display: inline-block;
-  background: var(--neon-blue);
-  color: #000000 !important;
-  -webkit-text-fill-color: #000000;
+  /* Liquid Glass Style */
+  background: rgba(255, 255, 255, 0.1); /* Frosted base */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px); /* Safari support */
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 
+    0 8px 32px 0 rgba(0, 0, 0, 0.3),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  color: #ffffff !important; /* White text for glass */
+  -webkit-text-fill-color: #ffffff;
   text-decoration: none;
-  font-weight: 800;
-  padding: 12px 24px;
-  border-radius: 12px;
+  font-weight: 600;
+  padding: 14px 28px;
+  border-radius: 30px; /* Smooth pill shape */
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
+  transition: all 0.3s ease;
+}
+
+.world-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 40px 0 rgba(0, 243, 255, 0.2), /* Neon Blue glow on hover */
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
 .world-btn.top-right {
