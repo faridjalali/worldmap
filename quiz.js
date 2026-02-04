@@ -76,10 +76,8 @@ async function initGame() {
 
     const filteredFeatures = features.filter(f => gameData[pad3(f.id)]);
 
-    // Special Handling: Trim France and Russia for tighter zoom on Europe
-    if (continentParam === "europe") {
-      trimEuropeGeometry(filteredFeatures);
-    }
+    // Special Handling: Geometry adjustments for cleaner zoom
+    adjustContinentGeometry(filteredFeatures, continentParam);
 
     const vp = getMapViewport();
     projection = d3.geoMercator().fitExtent([[vp.x0, vp.y0], [vp.x1, vp.y1]], {
@@ -479,30 +477,52 @@ function flashState(el, type) {
   setTimeout(() => d3.select(el).classed(type + "-flash", false), 500);
 }
 
-function trimEuropeGeometry(features) {
+function adjustContinentGeometry(features, continent) {
   for (const f of features) {
     const id = pad3(f.id);
 
-    // France (250): Remove French Guiana (South America)
-    // French Guiana is approx lon -53. Mainland is lon -5 to 10.
-    if (id === "250" && f.geometry && f.geometry.type === "MultiPolygon") {
-      f.geometry.coordinates = f.geometry.coordinates.filter(polygon => {
-        // Check longitude of the first point in the first ring
-        const [lon] = polygon[0][0]; 
-        // Keep if longitude is > -20 (East of Atlantic)
-        return lon > -20;
-      });
+    if (continent === "europe") {
+      // France (250): Remove French Guiana (South America)
+      // Filter out polygons with significantly negative longitude (West of -20)
+      if (id === "250" && f.geometry && f.geometry.type === "MultiPolygon") {
+        f.geometry.coordinates = f.geometry.coordinates.filter(polygon => {
+          const centroid = d3.geoCentroid({type: "Polygon", coordinates: polygon});
+          return centroid[0] > -20;
+        });
+      }
+
+      // Russia (643): Remove parts near Alaska (Western Hemisphere)
+      // Filter out polygons that are primarily in the Western Hemisphere (negative longitude)
+      if (id === "643" && f.geometry && f.geometry.type === "MultiPolygon") {
+        f.geometry.coordinates = f.geometry.coordinates.filter(polygon => {
+          const centroid = d3.geoCentroid({type: "Polygon", coordinates: polygon});
+          // Russian mainland is ~20E to 180E. Chukotka tip is ~-170W.
+          // Keep if centroid is positive (Eastern Hemisphere)
+          return centroid[0] >= 0;
+        });
+      }
     }
 
-    // Russia (643): Remove parts near Alaska (crosses 180 to negative lon)
-    // Most of Russia is positive lon (20E to 180E). 
-    // The "Alaska tip" is negative lon (e.g. -170).
-    if (id === "643" && f.geometry && f.geometry.type === "MultiPolygon") {
-      f.geometry.coordinates = f.geometry.coordinates.filter(polygon => {
-        const [lon] = polygon[0][0];
-        // Keep if longitude is >= 0 (Eastern Hemisphere)
-        return lon >= 0;
-      });
+    if (continent === "oceania") {
+      // Fiji (242): Artificially shift closer to Australia
+      // Fiji is approx ~178E. Australia is ~130E. Shift Fiji ~25 degrees West.
+      if (id === "242" && f.geometry) {
+        const shiftAmount = -15; // Shift West by 15 degrees
+        
+        const shiftPoint = (pt) => {
+          if (!Array.isArray(pt) || pt.length < 2) return pt;
+          return [pt[0] + shiftAmount, pt[1]];
+        };
+
+        const shiftRing = (ring) => ring.map(shiftPoint);
+        const shiftPoly = (poly) => poly.map(shiftRing);
+
+        if (f.geometry.type === "Polygon") {
+          f.geometry.coordinates = shiftPoly(f.geometry.coordinates);
+        } else if (f.geometry.type === "MultiPolygon") {
+          f.geometry.coordinates = f.geometry.coordinates.map(shiftPoly);
+        }
+      }
     }
   }
 }
