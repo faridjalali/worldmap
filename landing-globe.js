@@ -40,7 +40,7 @@ async function initGlobe() {
      console.error("D3 loading failed.");
      return;
   }
-// ... rest of initGlobe logic unchanged ...
+
   width = container.clientWidth;
   height = container.clientHeight;
 
@@ -145,7 +145,79 @@ async function initGlobe() {
   }
 }
 
-// ... (GLOBE_COLORS and render function unchanged) ...
+const GLOBE_COLORS = {
+  ocean: "#001a26", // Very Deep Dark Blue (almost midnight)
+  continents: {
+    "north-america": "#a68a5c", // Dark Sand
+    "south-america": "#7a9460", // Deep Muted Green
+    "europe": "#9e756d",        // Dark Muted Red
+    "africa": "#a89b70",        // Dark Earth/Desert
+    "asia": "#8f7660",          // Dark Wood
+    "oceania": "#6b8ea6"        // Deep Slate Blue
+  },
+  default: "#707070",
+  stroke: "rgba(0,0,0,0.5)" // Stronger dark borders
+};
+
+function render() {
+  // Define sphere background (ocean)
+  g.selectAll(".ocean").remove();
+  g.insert("path", ".country")
+    .datum({type: "Sphere"})
+    .attr("class", "ocean")
+    .attr("d", path) // Ensure path/projection is used
+    .attr("fill", GLOBE_COLORS.ocean)
+    .attr("stroke", "rgba(0, 0, 0, 0.5)")
+    .attr("stroke-width", 1);
+
+
+  const countries = g.selectAll(".country")
+    .data(features);
+
+  countries.enter().append("path")
+    .attr("class", "country globe-country") // Added specific class
+    .merge(countries)
+    .attr("d", path)
+    .attr("data-continent", d => d.properties.continent)
+    // Apply Traditional Colors using STYLE to override CSS
+    .style("fill", d => GLOBE_COLORS.continents[d.properties.continent] || GLOBE_COLORS.default)
+    .style("stroke", GLOBE_COLORS.stroke)
+    .on("mouseover", function(e, d) {
+       if (isDragging) return;
+       const cont = d.properties.continent;
+       if (!cont) return;
+       
+       // Highlight (DARKEN) all countries in this continent
+       d3.selectAll(`.country[data-continent='${cont}']`)
+         .style("filter", "brightness(0.7)") // Darken instead of brighten
+         .style("stroke", "rgba(255,255,255,0.6)")
+         .style("stroke-width", "1px");
+       
+       // Show Tooltip
+       const tt = document.getElementById("continent-tooltip");
+       tt.innerText = formatContinentName(cont);
+       tt.style.opacity = 1;
+       tt.style.left = (e.pageX + 10) + "px";
+       tt.style.top = (e.pageY - 20) + "px";
+    })
+    .on("mouseout", function(e, d) {
+       const cont = d.properties.continent;
+       if (cont) {
+          d3.selectAll(`.country[data-continent='${cont}']`)
+            .style("filter", null)
+            .style("stroke", GLOBE_COLORS.stroke)
+            .style("stroke-width", null);
+       }
+       document.getElementById("continent-tooltip").style.opacity = 0;
+    })
+    .on("click", function(e, d) {
+       if (isDragging) return;
+       const cont = d.properties.continent;
+       if (cont) {
+         window.location.href = `./quiz.html?continent=${cont}`;
+       }
+    });
+}
 
 function startRotationLoop() {
   // Single persistent timer
