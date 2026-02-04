@@ -49,9 +49,14 @@ async function initGlobe() {
 
   // Drag behavior for rotation
   const drag = d3.drag()
-    .on("start", () => {
+    .on("start", (event) => {
       isDragging = true;
       if (rotationTimer) rotationTimer.stop();
+      // Important to stop default browser scrolling on touch
+      if (event.sourceEvent.type.startsWith("touch")) {
+         // event.sourceEvent.preventDefault(); // Passive listener issue?
+         // D3 usually handles this if we don't set passive true elsewhere.
+      }
     })
     .on("drag", (event) => {
       const sensitivity = 75 / projection.scale();
@@ -65,10 +70,22 @@ async function initGlobe() {
     })
     .on("end", () => {
       isDragging = false;
-      startRotation();
+      // Restart rotation with a slight delay to avoid "catch-release" jumpiness
+      setTimeout(startRotation, 200); 
+    })
+    // Ensure we catch distractions/cancellations
+    .on("cancel", () => { 
+       isDragging = false; 
+       startRotation();
     });
+    
+  // Explicitly add a touchstart listener to the MAIN CONTAINER or SVG to stop occasional stickiness?
+  // Actually, relying on D3 drag should be enough if we handle 'end' robustly.
+  // But let's add a "safety click" behavior - if user TAPS, we ensure dragging is false.
 
-  svg.call(drag);
+  svg.call(drag)
+     // Prevent default touch actions (scrolling) while interacting with globe
+     .style("touch-action", "none");
 
   try {
     const topo = await fetchFirstOk(SOURCES.topo, "World Atlas");
