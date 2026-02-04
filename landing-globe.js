@@ -65,12 +65,22 @@ async function initGlobe() {
   path = d3.geoPath().projection(projection);
 
   // Drag behavior for rotation
+  let hasMoved = false; // Track if actual movement occurred
+  let startX = 0;
+  let startY = 0;
+  
   const drag = d3.drag()
     .on("start", (event) => {
       isDragging = true;
-      // No need to stop timer, it checks the flag
+      hasMoved = false;
+      startX = event.x; // track start
+      startY = event.y;
     })
     .on("drag", (event) => {
+      // Calculate total distance from start of drag
+      // (approximate via accumulation or just flag on sufficient delta)
+      // Since event.x is relative to parent, it works well.
+             
       const sensitivity = 75 / projection.scale();
       const rotate = projection.rotate();
       const k = sensitivity; 
@@ -79,10 +89,24 @@ async function initGlobe() {
         rotate[1] - event.dy * k
       ]);
       render();
+      
+      // Simple heuristic: if we receive drag events, we are dragging.
+      // To distinguish 'jitter' from 'intent', we can check total distance if we tracked it, 
+      // but simpler is: if allow even microscopic rotation, it's a drag.
+      // BUT for touch, finger size implies jitter.
+      // Let's use a "sticky" threshold.
+      if (!hasMoved) {
+         // We haven't confirmed move yet. Check current total vs start?
+         // D3 v6+ drag event has x and y.
+         // Let's just accumulate dx/dy roughly or set hasMoved if we move more than a handful of times?
+         // No, simpler:
+         if (Math.abs(event.dx) > 1 || Math.abs(event.dy) > 1) hasMoved = true;
+      }
     })
     .on("end", () => {
-      // Delay resuming auto-rotation slightly for smoother feel
-      setTimeout(() => { isDragging = false; }, 50);
+      isDragging = false;
+      // If we didn't move "significantly", we treat it as a click?
+      // No, the click handler checks 'hasMoved'.
     });
 
   svg.call(drag)
@@ -146,17 +170,17 @@ async function initGlobe() {
 }
 
 const GLOBE_COLORS = {
-  ocean: "#001a26", // Very Deep Dark Blue (almost midnight)
+  ocean: "#004866", // Original Traditional Ocean (Lighter)
   continents: {
-    "north-america": "#a68a5c", // Dark Sand
-    "south-america": "#7a9460", // Deep Muted Green
-    "europe": "#9e756d",        // Dark Muted Red
-    "africa": "#a89b70",        // Dark Earth/Desert
-    "asia": "#8f7660",          // Dark Wood
-    "oceania": "#6b8ea6"        // Deep Slate Blue
+    "north-america": "#e6c288", // Sandy/Yellow
+    "south-america": "#a8c686", // Muted Green
+    "europe": "#d8a499",        // Muted Pink/Red
+    "africa": "#e8d8a5",        // Desert Yellow
+    "asia": "#c4a484",          // Earthy Brown
+    "oceania": "#99badd"        // Light Blue/Teal
   },
-  default: "#707070",
-  stroke: "rgba(0,0,0,0.5)" // Stronger dark borders
+  default: "#d0d0d0",
+  stroke: "rgba(0,0,0,0.3)" // Original subtle borders
 };
 
 function render() {
@@ -211,7 +235,7 @@ function render() {
        document.getElementById("continent-tooltip").style.opacity = 0;
     })
     .on("click", function(e, d) {
-       if (isDragging) return;
+       if (hasMoved) return; // Prevent click if dragged
        const cont = d.properties.continent;
        if (cont) {
          window.location.href = `./quiz.html?continent=${cont}`;
