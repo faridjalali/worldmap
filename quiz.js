@@ -478,52 +478,62 @@ function flashState(el, type) {
 }
 
 function adjustContinentGeometry(features, continent) {
-  // Helper to shift coords
-  const shiftCoords = (geometry, conditionFn, shiftFn) => {
-    const transformRing = (ring) => ring.map(pt => conditionFn(pt) ? shiftFn(pt) : pt);
-    const transformPoly = (poly) => poly.map(transformRing);
-
-    if (geometry.type === "Polygon") {
-      geometry.coordinates = transformPoly(geometry.coordinates);
-    } else if (geometry.type === "MultiPolygon") {
-      geometry.coordinates = geometry.coordinates.map(transformPoly);
-    }
-  };
-
   for (const f of features) {
     const id = pad3(f.id);
 
     if (continent === "europe") {
-      // France (250): Trim French Guiana (South America, ~-53 Lon)
-      // Mainland France is > -5.
+      // France (250): Trim French Guiana (South America)
+      // Filter polygons based on Centroid Longitude
       if (id === "250" && f.geometry && f.geometry.type === "MultiPolygon") {
         f.geometry.coordinates = f.geometry.coordinates.filter(polygon => {
-          // Use centroid check to be safe (keep if East of -20)
           const centroid = d3.geoCentroid({type: "Polygon", coordinates: polygon});
-          return centroid[0] > -20;
+          return centroid[0] > -20; // Keep if East of Atlantic
         });
       }
 
-      // Russia (643): STITCH the "Alaska tip" back to the East.
-      // The tip is at ~-170 Lon. We want it at ~190 Lon.
-      // Logic: If point.x < 0, point.x += 360.
+      // Russia (643): STITCH Alaska tip (-170) to East (190)
       if (id === "643" && f.geometry) {
-        shiftCoords(
-          f.geometry,
-          (pt) => pt[0] < -20, // If significantly West (Alaska tip is -170)
-          (pt) => [pt[0] + 360, pt[1]] // Shift to East (> 180)
-        );
+        // Recursive function to shift points in a structure
+        const shiftRecursive = (coords, depth) => {
+          // Depth 0: [x, y] -> Shift if x < -20
+          if (depth === 0) {
+            if (coords[0] < -20) coords[0] += 360;
+            return;
+          }
+          // Recursively traverse
+          for (const child of coords) {
+            shiftRecursive(child, depth - 1);
+          }
+        };
+
+        if (f.geometry.type === "MultiPolygon") {
+          // MultiPolygon: [Polygon, Polygon...]
+          // Polygon: [Ring, Ring...]
+          // Ring: [Point, Point...] -> Depth 3 from MultiPolygon root
+          shiftRecursive(f.geometry.coordinates, 3);
+        } else if (f.geometry.type === "Polygon") {
+          // Polygon: [Ring, Ring...] -> Depth 2 from Polygon root
+          shiftRecursive(f.geometry.coordinates, 2);
+        }
       }
     }
 
     if (continent === "oceania") {
-      // Fiji (242): Shift 15 deg West to close gap
+      // Fiji (242): Shift 15 deg West (-15)
       if (id === "242" && f.geometry) {
-         shiftCoords(
-           f.geometry,
-           () => true, // Always shift
-           (pt) => [pt[0] - 15, pt[1]]
-         );
+        const shiftRecursive = (coords, depth) => {
+          if (depth === 0) {
+            coords[0] -= 15;
+            return;
+          }
+          for (const child of coords) shiftRecursive(child, depth - 1);
+        };
+
+        if (f.geometry.type === "MultiPolygon") {
+          shiftRecursive(f.geometry.coordinates, 3);
+        } else if (f.geometry.type === "Polygon") {
+          shiftRecursive(f.geometry.coordinates, 2);
+        }
       }
     }
   }
