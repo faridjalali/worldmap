@@ -107,6 +107,14 @@ async function initGame() {
       type: "FeatureCollection",
       features: featuresForFitting
     });
+
+    // Special Handling: Shift Europe Right to center Mainland (compensating for Russia's width)
+    if (continentParam === "europe") {
+      const t = projection.translate();
+      // Shift Right by 15% of screen width to pull Europe from the left edge to center
+      projection.translate([t[0] + (width * 0.15), t[1]]);
+    }
+
     path = d3.geoPath().projection(projection);
 
     g.selectAll("path")
