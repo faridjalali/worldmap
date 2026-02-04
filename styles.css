@@ -84,8 +84,8 @@ body {
 /* Active/Zoomed State */
 .state.active-focused {
   opacity: 1;
-  stroke: #000000; /* Force Black */
-  stroke-width: 1px; /* Full Thickness */
+  stroke: #fff;
+  stroke-width: 2px;
   filter: brightness(0.9);
 }
 
