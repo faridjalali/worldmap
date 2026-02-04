@@ -2,7 +2,7 @@
   /* Traditional Ocean Background (Deep Blue for contrast, but ocean-like) */
   --bg-deep: #004866; /* Matched to Globe */ 
   /* Traditional Borders (Subtle Dark) */
-  --map-stroke: rgba(0, 0, 0, 0.3);
+  --map-stroke: rgba(0, 0, 0, 0.7);
   
   --neon-blue: #00f3ff;
   --neon-pink: #ff0055;

@@ -10,20 +10,21 @@ const SOURCES = {
   ]
 };
 
+// Global Module State
 let width, height;
 let svg, g, projection, path;
 let features = [];
 let isDragging = false;
+let hasMoved = false; // Shared state for Click vs Drag
 let rotationTimer;
 
 window.addEventListener("load", () => {
-   if (window.d3) {
+   if (window.d3 && window.topojson) {
       initGlobe();
    } else {
-      // Fallback: wait a bit if D3 is racing
-      const checkD3 = setInterval(() => {
-         if (window.d3) {
-            clearInterval(checkD3);
+      const checkDeps = setInterval(() => {
+         if (window.d3 && window.topojson) {
+            clearInterval(checkDeps);
             initGlobe();
          }
       }, 50);
@@ -34,12 +35,7 @@ window.addEventListener("resize", handleResize);
 async function initGlobe() {
   const container = document.getElementById("continent-map");
   if (!container) return;
-  // Safety check for D3 again
-  if (!window.d3) {
-     console.error("D3 loading failed.");
-     return;
-  }
-
+  
   width = container.clientWidth;
   height = container.clientHeight;
 
@@ -50,8 +46,7 @@ async function initGlobe() {
 
   g = svg.append("g");
 
-  // Setup Orthographic Projection (3D Globe)
-  // Responsive Scale: Fit within the smaller dimension
+  // Setup Orthographic Projection
   const size = Math.min(width, height);
   const scale = (size / 2) * 0.9;
 
@@ -59,37 +54,32 @@ async function initGlobe() {
     .scale(scale)
     .center([0, 0])
     .translate([width / 2, height / 2])
-    .clipAngle(90); // Clips back-face
+    .clipAngle(90);
 
   path = d3.geoPath().projection(projection);
 
-  // Drag behavior for rotation
-  let hasMoved = false; 
+  // Drag Behavior with Euclidean Distance Check
   let startX = 0, startY = 0;
   
   const drag = d3.drag()
     .on("start", (event) => {
       isDragging = true;
-      window.hasMoved = false;
+      hasMoved = false; // Reset module-level flag
       startX = event.x;
       startY = event.y;
     })
     .on("drag", (event) => {
-      // Calculate total distance from start
       const dx = event.x - startX;
       const dy = event.y - startY;
       const dist = Math.sqrt(dx*dx + dy*dy);
       
-      // If we moved more than 5 pixels total, it's a drag
-      if (dist > 5) window.hasMoved = true;
+      if (dist > 5) hasMoved = true;
       
       const sensitivity = 75 / projection.scale();
       const rotate = projection.rotate();
-      const k = sensitivity; 
-      // Use event.dx here for relative rotation update
       projection.rotate([
-        rotate[0] + event.dx * k,
-        rotate[1] - event.dy * k
+        rotate[0] + event.dx * sensitivity,
+        rotate[1] - event.dy * sensitivity
       ]);
       render();
     })
@@ -110,7 +100,7 @@ async function initGlobe() {
       if (c.ccn3) byCcn3.set(pad3(c.ccn3), c);
     });
 
-    // MANUAL INJECTION: Ensure Kosovo (383) exists for Globe
+    // Manual Injection: Kosovo (383)
     if (!byCcn3.has("383")) {
       byCcn3.set("383", {
         name: { common: "Kosovo" },
@@ -123,7 +113,7 @@ async function initGlobe() {
     const world = topojson.feature(topo, topo.objects.countries);
     features = world.features;
 
-    // PATCH: Fix Disputed Territories (Somaliland, Kosovo)
+    // Patch Disputed Territories
     features.forEach(f => {
       if (f.id === -99 || f.id === "-99") {
         const centroid = d3.geoCentroid(f);
@@ -138,7 +128,7 @@ async function initGlobe() {
       }
     });
 
-    // Map features to continent/name AFTER patching IDs
+    // Assign Metadata
     features = features.map(f => {
       const meta = byCcn3.get(pad3(f.id));
       if (meta) {
@@ -148,7 +138,7 @@ async function initGlobe() {
       return f;
     });
 
-    // Start Persistent Loop
+    // Start Loop
     startRotationLoop();
 
   } catch (err) {
@@ -157,29 +147,29 @@ async function initGlobe() {
   }
 }
 
+// Traditional Palette
 const GLOBE_COLORS = {
-  ocean: "#004866", // Original Traditional Ocean (Lighter)
+  ocean: "#004866", 
   continents: {
-    "north-america": "#e6c288", // Sandy/Yellow
-    "south-america": "#a8c686", // Muted Green
-    "europe": "#d8a499",        // Muted Pink/Red
-    "africa": "#e8d8a5",        // Desert Yellow
-    "asia": "#c4a484",          // Earthy Brown
-    "oceania": "#99badd"        // Light Blue/Teal
+    "north-america": "#e6c288", 
+    "south-america": "#a8c686", 
+    "europe": "#d8a499",        
+    "africa": "#e8d8a5",        
+    "asia": "#c4a484",          
+    "oceania": "#99badd"        
   },
   default: "#d0d0d0",
-  stroke: "rgba(0,0,0,0.3)" // Original subtle borders
+  stroke: "rgba(0,0,0,0.6)" // Darker/Blacker for Safari visibility
 };
 
 function render() {
-  // Define sphere background (ocean)
   g.selectAll(".ocean").remove();
   g.insert("path", ".country")
     .datum({type: "Sphere"})
     .attr("class", "ocean")
-    .attr("d", path) // Ensure path/projection is used
+    .attr("d", path)
     .attr("fill", GLOBE_COLORS.ocean)
-    .attr("stroke", "rgba(0, 0, 0, 0.5)")
+    .attr("stroke", "rgba(0, 0, 0, 0.6)")
     .attr("stroke-width", 1);
 
 
@@ -187,24 +177,23 @@ function render() {
     .data(features);
 
   countries.enter().append("path")
-    .attr("class", "country globe-country") // Added specific class
+    .attr("class", "country globe-country")
     .merge(countries)
     .attr("d", path)
     .attr("data-continent", d => d.properties.continent)
     .style("fill", d => GLOBE_COLORS.continents[d.properties.continent] || GLOBE_COLORS.default)
     .style("stroke", GLOBE_COLORS.stroke)
+    .style("stroke-width", "0.5px") // Explicit width for consistency
     .on("mouseover", function(e, d) {
-       if (isDragging) return;
+       if (isDragging || hasMoved) return; // Ignore if moving
        const cont = d.properties.continent;
        if (!cont) return;
        
-       // Highlight (DARKEN) all countries in this continent
        d3.selectAll(`.country[data-continent='${cont}']`)
-         .style("filter", "brightness(0.7)") // Darken instead of brighten
+         .style("filter", "brightness(0.7)")
          .style("stroke", "rgba(255,255,255,0.6)")
          .style("stroke-width", "1px");
        
-       // Show Tooltip
        const tt = document.getElementById("continent-tooltip");
        tt.innerText = formatContinentName(cont);
        tt.style.opacity = 1;
@@ -222,17 +211,7 @@ function render() {
        document.getElementById("continent-tooltip").style.opacity = 0;
     })
     .on("click", function(e, d) {
-       // Robust check: If we moved, it's a drag, ignore click.
-       // We need to access hasMoved from the drag scope? 
-       // d3 drag handler is closure. 
-       // We can just rely on isDragging? No, drag end sets isDragging false.
-       // We need a shared var. We defined hasMoved in initGlobe scope, but render is outside.
-       // WAIT. hasMoved is defined inside initGlobe in my write, BUT render is OUTSIDE initGlobe.
-       // hasMoved is NOT accessible in render!
-       // I must move 'hasMoved' to global scope or pass it.
-       // I will move 'hasMoved' to top level let.
-       
-       if (window.hasMoved) return; 
+       if (hasMoved) return; // Ignore if it was a drag
        
        const cont = d.properties.continent;
        if (cont) {
@@ -242,14 +221,10 @@ function render() {
 }
 
 function startRotationLoop() {
-  // Single persistent timer
-  d3.timer((elapsed) => {
-    if (isDragging) return; // User is in control, do nothing
-    
-    // Auto-rotate
+  d3.timer(() => {
+    if (isDragging) return;
     const rotate = projection.rotate();
-    const k = 0.2; // Rotation speed
-    projection.rotate([rotate[0] + k, rotate[1]]);
+    projection.rotate([rotate[0] + 0.2, rotate[1]]);
     render();
   });
 }
@@ -261,19 +236,17 @@ function handleResize() {
   
   width = container.clientWidth;
   height = container.clientHeight;
-  
-  // Responsive Scale: Fit within the smaller dimension with some padding
   const size = Math.min(width, height);
-  const scale = (size / 2) * 0.9; // 90% of radius
+  const scale = (size / 2) * 0.9; 
 
   svg.attr("viewBox", `0 0 ${width} ${height}`);
   projection.translate([width / 2, height / 2]).scale(scale);
   render();
 }
 
+// Helpers
 function pad3(n) {
-  const s = String(n);
-  return s.length >= 3 ? s : s.padStart(3, "0");
+  return String(n).padStart(3, "0");
 }
 
 function resolveContinent(meta) {
@@ -299,18 +272,11 @@ function formatContinentName(slug) {
 }
 
 async function fetchFirstOk(urls, label) {
-  let lastErr = null;
   for (const url of urls) {
     try {
       const res = await fetch(url);
-      if (!res.ok) throw new Error(`${label} fetch failed`);
-      return await res.json();
-    } catch (err) {
-      lastErr = err;
-    }
+      if (res.ok) return await res.json();
+    } catch (err) {}
   }
   throw new Error(`${label} failed.`);
 }
-
-// Ensure hasMoved is global
-window.hasMoved = false; 
