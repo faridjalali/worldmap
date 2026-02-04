@@ -366,6 +366,13 @@ body {
   visibility: visible !important;
 }
 
+#sub-prompt:empty {
+  display: none !important;
+  padding: 0 !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
 #fact-overlay {
   position: fixed;
   inset: 0;

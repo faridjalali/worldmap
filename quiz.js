@@ -464,8 +464,8 @@ function transitionToCityPhase(geoData, id) {
   const data = gameData[id];
   document.getElementById("find-label").innerText = "Find City";
   const sp = document.getElementById("sub-prompt");
-  sp.innerText = "";
-  sp.classList.remove("persist"); // Reset state
+  sp.innerHTML = ""; // Use innerHTML to ensure :empty works
+  sp.classList.remove("persist", "show"); // Clear ALL visibility flags
 
   const cityChoices = data.cities.slice(0, 3);
 
