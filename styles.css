@@ -359,7 +359,7 @@ body {
   border-radius: 50px; /* Pill shape */
   box-shadow: 0 4px 15px rgba(0,0,0,0.5);
   margin-top: 15px;
-  font-weight: 600;
+  font-weight: 400; /* Normal weight for body text */
   opacity: 0; /* Hidden by default */
   visibility: hidden; /* Ensure it's ignored by clicks too */
   transition: opacity 0.3s, visibility 0.3s;
