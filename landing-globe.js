@@ -10,6 +10,8 @@ const SOURCES = {
   ]
 };
 
+import { startQuiz, exitQuiz } from "./quiz.js";
+
 // Global Module State
 let width, height;
 let svg, g, projection, path;
@@ -18,7 +20,20 @@ let isDragging = false;
 let hasMoved = false; // Shared state for Click vs Drag
 let rotationTimer;
 
+// Button Wiring
 window.addEventListener("load", () => {
+   // Wire up World Button
+   document.getElementById("btn-world-start").onclick = (e) => {
+     e.preventDefault();
+     switchToQuiz("world");
+   };
+   
+   // Wire up Back Button
+   document.getElementById("btn-quiz-back").onclick = (e) => {
+     e.preventDefault();
+     exitQuiz();
+   };
+
    if (window.d3 && window.topojson) {
       initGlobe();
    } else {
@@ -30,6 +45,12 @@ window.addEventListener("load", () => {
       }, 50);
    }
 });
+
+function switchToQuiz(continent) {
+  document.getElementById("view-landing").classList.add("hidden");
+  document.getElementById("view-quiz").classList.remove("hidden");
+  startQuiz(continent);
+}
 
 // Traditional Palette
 const GLOBE_COLORS = {
@@ -226,7 +247,7 @@ async function initGlobe() {
         
         const cont = d.properties.continent;
         if (cont) {
-          window.location.href = `./quiz.html?continent=${cont}`;
+          switchToQuiz(cont);
         }
      });
 

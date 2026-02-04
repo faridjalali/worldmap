@@ -12,28 +12,15 @@ const SOURCES = {
   ]
 };
 
-const continentParam = new URLSearchParams(window.location.search).get("continent") || "world";
+// Removed auto-load for SPA
+// window.addEventListener("load", initGame);
 
-let svg, g, zoom, projection, path;
-let width, height, currentScale = 1;
-let currentTargetID = "", currentPhase = "MAP_SELECTION";
-let score = 0, isCapitalMode = true, visited = new Set();
-let targetCityName = "";
-let gameData = {};
-let features = [];
-let cityDB = {};
+export async function startQuiz(continent) {
+  const continentParam = continent || "world";
+  
+  // Cleanup any previous instance
+  d3.select("#map-stage").selectAll("*").remove();
 
-const mapPadding = { top: 90, right: 40, bottom: 40, left: 40 };
-
-// Dot sizing controls (screen-space targets)
-const DOT_SCREEN_BASE = 12; // Doubled from 6
-const DOT_SCREEN_EXP = 0.35;
-const DOT_SCREEN_MIN = 4;   // Doubled from 2
-const DOT_SCREEN_MAX = 14;  // Doubled from 7
-
-window.addEventListener("load", initGame);
-
-async function initGame() {
   width = window.innerWidth;
   height = window.innerHeight;
 
