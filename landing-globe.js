@@ -96,16 +96,29 @@ async function initGlobe() {
   }
 }
 
+const GLOBE_COLORS = {
+  ocean: "#006994", // Traditional Ocean Blue
+  continents: {
+    "north-america": "#e6c288", // Sandy/Yellow
+    "south-america": "#a8c686", // Muted Green
+    "europe": "#d8a499",        // Muted Pink/Red
+    "africa": "#e8d8a5",        // Desert Yellow
+    "asia": "#c4a484",          // Earthy Brown
+    "oceania": "#99badd"        // Light Blue/Teal
+  },
+  default: "#d0d0d0",
+  stroke: "rgba(0,0,0,0.3)" // Subtle dark borders
+};
+
 function render() {
   // Define sphere background (ocean)
-  // We can draw a circle for the water
   g.selectAll(".ocean").remove();
   g.insert("path", ".country")
     .datum({type: "Sphere"})
     .attr("class", "ocean")
     .attr("d", path)
-    .attr("fill", "rgba(0, 243, 255, 0.05)")
-    .attr("stroke", "rgba(255, 255, 255, 0.1)")
+    .attr("fill", GLOBE_COLORS.ocean)
+    .attr("stroke", "rgba(0, 0, 0, 0.5)")
     .attr("stroke-width", 1);
 
 
@@ -113,17 +126,20 @@ function render() {
     .data(features);
 
   countries.enter().append("path")
-    .attr("class", "country")
+    .attr("class", "country globe-country") // Added specific class
     .merge(countries)
     .attr("d", path)
     .attr("data-continent", d => d.properties.continent)
+    // Apply Traditional Colors
+    .attr("fill", d => GLOBE_COLORS.continents[d.properties.continent] || GLOBE_COLORS.default)
+    .attr("stroke", GLOBE_COLORS.stroke)
     .on("mouseover", function(e, d) {
        if (isDragging) return;
        const cont = d.properties.continent;
        if (!cont) return;
        
-       // Highlight all countries in this continent
-       d3.selectAll(`.country[data-continent='${cont}']`).classed("highlight", true);
+       // Highlight (brighten) all countries in this continent
+       d3.selectAll(`.country[data-continent='${cont}']`).style("filter", "brightness(1.3)");
        
        // Show Tooltip
        const tt = document.getElementById("continent-tooltip");
@@ -135,7 +151,7 @@ function render() {
     .on("mouseout", function(e, d) {
        const cont = d.properties.continent;
        if (cont) {
-          d3.selectAll(`.country[data-continent='${cont}']`).classed("highlight", false);
+          d3.selectAll(`.country[data-continent='${cont}']`).style("filter", null);
        }
        document.getElementById("continent-tooltip").style.opacity = 0;
     })

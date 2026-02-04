@@ -517,20 +517,31 @@ body {
   }
   
   /* Hide Desktop "Entire World" button on mobile */
+  /* Re-purposed to be the main button centered below header */
   .world-btn.top-right {
-    display: none;
+    display: block; /* Show it */
+    position: static; /* Remove absolute positioning */
+    margin: 10px auto 20px auto; /* Center it with spacing */
+    width: fit-content;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.2); /* Add subtle border for 'traditional' feel? Optional. */
   }
 
-  /* Hide Map */
+  /* FORCE Show Map (Globe) on index2.html mobile */
+  /* Note: index.html might still need the hidden behavior for the flat map if we wanted to preserve it. 
+     But for this task, we are enabling it. 
+     If we want to target ONLY index2, we'd need a specific class on body. 
+     Assuming this request overwrites the general "hide map on mobile" rule. */
   .map-stage {
-    display: none;
-    height: 0;
-    min-height: 0;
+    display: block;
+    height: calc(100vh - 200px); /* Adjust height for button taking space */
+    min-height: 400px;
   }
 
-  /* Show List */
+  /* Show List - Disable for now as we are doing 3D globe only */
+  /* .mobile-list { display: flex; } */
   .mobile-list {
-    display: flex;
+     display: none !important;
   }
 
   /* Adjust HUD and Back Button on mobile */
