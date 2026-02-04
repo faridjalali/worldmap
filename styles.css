@@ -1,6 +1,6 @@
 :root {
   --bg-deep: #050505;
-  --map-stroke: rgba(255, 255, 255, 0.15);
+  --map-stroke: rgba(255, 255, 255, 0.6);
   --neon-blue: #00f3ff;
   --neon-pink: #ff0055;
   --neon-green: #00ff9d;
@@ -409,7 +409,7 @@ body {
 
 .country {
   fill: rgba(120, 180, 220, 0.22);
-  stroke: rgba(255, 255, 255, 0.15);
+  stroke: rgba(255, 255, 255, 0.6);
   stroke-width: 0.5;
   transition:
     fill 0.2s,
