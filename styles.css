@@ -86,7 +86,7 @@ body {
   opacity: 1;
   stroke: #000000; /* Force Black */
   stroke-width: 1px; /* Full Thickness */
-  filter: brightness(0.9);
+  filter: brightness(0.6); /* Darker shade for highlight */
 }
 
 .country.highlight {
