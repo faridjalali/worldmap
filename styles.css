@@ -561,11 +561,11 @@ body {
 
 .world-btn {
   display: inline-block;
-  /* Liquid Glass Style */
-  background: rgba(255, 255, 255, 0.1); /* Frosted base */
+  /* Liquid Glass Style (Blue Tint) */
+  background: rgba(0, 243, 255, 0.15); /* Blue Frosted base */
   backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px); /* Safari support */
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 243, 255, 0.3); /* Blue-ish border */
   box-shadow: 
     0 8px 32px 0 rgba(0, 0, 0, 0.3),
     inset 0 0 0 1px rgba(255, 255, 255, 0.1);
