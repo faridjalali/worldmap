@@ -557,6 +557,9 @@ function handleCityClick(event, cityNode, id) {
     showFact(cityNode.name, id, "CORRECT", "status-correct", correctFact);
   } else {
     dot.classed("wrong-choice", true);
+    // Remove the throbbing halo for this wrong choice
+    d3.selectAll(".city-halo").filter(d => d.name === cityNode.name).remove();
+
     score -= 10; updateScoreUI();
     
     if (!isCapitalMode) {
