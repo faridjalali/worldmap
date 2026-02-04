@@ -15,6 +15,23 @@ const SOURCES = {
 // Removed auto-load for SPA
 // window.addEventListener("load", initGame);
 
+let svg, g, zoom, projection, path;
+let width, height, currentScale = 1;
+let currentTargetID = "", currentPhase = "MAP_SELECTION";
+let score = 0, isCapitalMode = true, visited = new Set();
+let targetCityName = "";
+let gameData = {};
+let features = [];
+let cityDB = {};
+
+const mapPadding = { top: 90, right: 40, bottom: 40, left: 40 };
+
+// Dot sizing controls (screen-space targets)
+const DOT_SCREEN_BASE = 12;
+const DOT_SCREEN_EXP = 0.35;
+const DOT_SCREEN_MIN = 4;
+const DOT_SCREEN_MAX = 14;
+
 export async function startQuiz(continent) {
   const continentParam = continent || "world";
   
@@ -679,4 +696,10 @@ function adjustContinentGeometry(features, continent) {
       }
     }
   }
+}
+
+export function exitQuiz() {
+  d3.select("#map-stage").selectAll("*").remove();
+  document.getElementById("view-quiz").classList.add("hidden");
+  document.getElementById("view-landing").classList.remove("hidden");
 }
