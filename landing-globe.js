@@ -184,7 +184,7 @@ function render() {
     .attr("data-continent", d => d.properties.continent)
     .style("fill", d => GLOBE_COLORS.continents[d.properties.continent] || GLOBE_COLORS.default)
     .style("stroke", GLOBE_COLORS.stroke)
-    .style("stroke-width", "1px") // Explicit width for consistency
+    .style("stroke-width", "0.5px") // Half thickness default
     .style("stroke-opacity", 1)
     .on("mouseover", function(e, d) {
        if (isDragging) return; // Ignore if actively dragging
@@ -193,8 +193,8 @@ function render() {
        
        d3.selectAll(`.country[data-continent='${cont}']`)
          .style("filter", "brightness(0.7)")
-         .style("stroke", "rgba(255,255,255,0.6)")
-         .style("stroke-width", "1px");
+         .style("stroke", "#000000") // Black on hover
+         .style("stroke-width", "1px"); // Full thickness on hover
        
        const tt = document.getElementById("continent-tooltip");
        tt.innerText = formatContinentName(cont);

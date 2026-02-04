@@ -46,7 +46,7 @@ body {
 
 .state {
   stroke: var(--map-stroke);
-  stroke-width: 1px;
+  stroke-width: 0.5px;
   stroke-opacity: 1;
   transition:
     fill 0.3s,
@@ -76,8 +76,8 @@ body {
 
 .state:hover {
   opacity: 0.9;
-  stroke: rgba(255, 255, 255, 0.8);
-  stroke-width: 1px;
+  stroke: #000000; /* Force black on hover */
+  stroke-width: 1px; /* "Full thickness" */
   filter: brightness(0.8); /* Darken on hover */
 }
 .state.active-focused {
@@ -419,7 +419,7 @@ body {
 .country {
   fill: #d0d0d0; /* Default Grey/Paper color */
   stroke: var(--map-stroke);
-  stroke-width: 1px;
+  stroke-width: 0.5px;
   stroke-opacity: 1;
   transition:
     fill 0.2s,
