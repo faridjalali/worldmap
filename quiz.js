@@ -443,7 +443,7 @@ function handleStateClick(event, d) {
     flashState(this, "wrong");
     const wrongName = gameData[clickedID].name;
     // Show ephemeral feedback
-    showFeedback(`That is <span style="font-weight:900;">${wrongName}</span>. Try again.`);
+    showFeedback(`That is <span style="font-weight:900;">${wrongName}</span>.`);
   }
 }
 
@@ -566,7 +566,7 @@ function handleCityClick(event, cityNode, id) {
       showFact(cityNode.name, id, "INCORRECT", "status-wrong", clickedCityFact, "Try Again", closeOverlay);
     } else {
        // Capital mode - standard feedback (Redirection to Error Pill)
-       showFeedback(`That is <span style="font-weight:900;">${cityNode.name}</span>. Try again.`);
+       showFeedback(`That is <span style="font-weight:900;">${cityNode.name}</span>.`);
     }
   }
 }
