@@ -471,11 +471,10 @@ function transitionToCityPhase(geoData, id) {
     targetCityName = data.capital;
     document.getElementById("main-prompt").innerText = "Capital";
   } else {
+    const target = cityChoices[Math.floor(Math.random() * cityChoices.length)];
     targetCityName = target.name;
     document.getElementById("main-prompt").innerText = "Identify City";
-    const sp = document.getElementById("sub-prompt");
-    sp.innerText = `"${target.fact}"`;
-    sp.classList.add("show"); // Ensure persistent visibility for Fact
+    document.getElementById("sub-prompt").innerText = `"${target.fact}"`;
   }
 
   // Lock toggle during city phase
@@ -533,7 +532,7 @@ function handleCityClick(event, cityNode, id) {
       showFact(cityNode.name, id, "INCORRECT", "status-wrong", clickedCityFact, "Try Again", closeOverlay);
     } else {
        // Capital mode - standard feedback
-       showFeedback(`That is <span style="color:#000000; font-weight:bold;">${cityNode.name}</span>. Try again.`);
+       document.getElementById("sub-prompt").innerHTML = `That is <span style="color:#000000; font-weight:bold;">${cityNode.name}</span>. Try again.`;
     }
   }
 }
