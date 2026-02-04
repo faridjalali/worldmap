@@ -159,7 +159,8 @@ const GLOBE_COLORS = {
     "oceania": "#99badd"        
   },
   default: "#d0d0d0",
-  stroke: "rgba(0,0,0,0.6)" // Darker/Blacker for Safari visibility
+  default: "#d0d0d0",
+  stroke: "#000000" // Solid Black
 };
 
 function render() {
@@ -169,8 +170,8 @@ function render() {
     .attr("class", "ocean")
     .attr("d", path)
     .attr("fill", GLOBE_COLORS.ocean)
-    .attr("stroke", "rgba(0, 0, 0, 0.6)")
-    .attr("stroke-width", 1);
+    .attr("stroke", "#000000")
+    .attr("stroke-width", 2);
 
 
   const countries = g.selectAll(".country")
@@ -183,7 +184,8 @@ function render() {
     .attr("data-continent", d => d.properties.continent)
     .style("fill", d => GLOBE_COLORS.continents[d.properties.continent] || GLOBE_COLORS.default)
     .style("stroke", GLOBE_COLORS.stroke)
-    .style("stroke-width", "0.5px") // Explicit width for consistency
+    .style("stroke-width", "1px") // Explicit width for consistency
+    .style("stroke-opacity", 1)
     .on("mouseover", function(e, d) {
        if (isDragging) return; // Ignore if actively dragging
        const cont = d.properties.continent;

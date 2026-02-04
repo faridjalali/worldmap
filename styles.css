@@ -1,8 +1,8 @@
 :root {
   /* Traditional Ocean Background (Deep Blue for contrast, but ocean-like) */
   --bg-deep: #004866; /* Matched to Globe */ 
-  /* Traditional Borders (Subtle Dark) */
-  --map-stroke: rgba(0, 0, 0, 0.7);
+  /* Traditional Borders (Solid Black for Safari) */
+  --map-stroke: #000000; 
   
   --neon-blue: #00f3ff;
   --neon-pink: #ff0055;
@@ -44,7 +44,8 @@ body {
 
 .state {
   stroke: var(--map-stroke);
-  stroke-width: 0.5px;
+  stroke-width: 1px;
+  stroke-opacity: 1;
   transition:
     fill 0.3s,
     opacity 0.3s;
@@ -416,7 +417,8 @@ body {
 .country {
   fill: #d0d0d0; /* Default Grey/Paper color */
   stroke: var(--map-stroke);
-  stroke-width: 0.5px;
+  stroke-width: 1px;
+  stroke-opacity: 1;
   transition:
     fill 0.2s,
     opacity 0.2s,
