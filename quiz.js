@@ -443,7 +443,7 @@ function handleStateClick(event, d) {
 // Helper for Ephemeral Message
 let feedbackTimer;
 function showFeedback(html) {
-  const el = document.getElementById("error-feedback");
+  const el = document.getElementById("sub-prompt");
   if (!el) return;
   el.innerHTML = html;
   el.classList.add("show");
@@ -471,12 +471,11 @@ function transitionToCityPhase(geoData, id) {
     targetCityName = data.capital;
     document.getElementById("main-prompt").innerText = "Capital";
   } else {
-    const target = cityChoices[Math.floor(Math.random() * cityChoices.length)];
     targetCityName = target.name;
     document.getElementById("main-prompt").innerText = "Identify City";
     const sp = document.getElementById("sub-prompt");
     sp.innerText = `"${target.fact}"`;
-    sp.classList.add("static-mode"); // Make Fact Visible Persistent
+    sp.classList.add("show"); // Ensure persistent visibility for Fact
   }
 
   // Lock toggle during city phase

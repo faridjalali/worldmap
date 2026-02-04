@@ -81,6 +81,7 @@ body {
   stroke-width: 1px; /* "Full thickness" */
   filter: brightness(0.8); /* Darken on hover */
 }
+/* Active/Zoomed State */
 .state.active-focused {
   opacity: 1;
   stroke: #000000; /* Force Black */
@@ -296,7 +297,7 @@ body {
   font-weight: 900;
   margin: 5px 0 0;
 }
-#sub-prompt, #error-feedback {
+#sub-prompt {
   font-size: 1.1rem;
   color: #000000; /* Black Text */
   background-color: #ffffff; /* White Background */
@@ -310,22 +311,7 @@ body {
   transition: opacity 0.3s;
 }
 
-/* Sub-prompt visible when holding static content (Fact) */
-#sub-prompt.static-mode {
-  opacity: 1 !important;
-  visibility: visible !important;
-}
-
-#error-feedback {
-  position: absolute; /* Float over/near */
-  left: 50%;
-  transform: translateX(-50%);
-  top: 100%; /* Below main prompt */
-  width: max-content;
-  z-index: 20;
-}
-
-#error-feedback.show {
+#sub-prompt.show {
   opacity: 1 !important;
   visibility: visible !important;
 }
@@ -617,4 +603,5 @@ body {
      we just need to check overlap. */
   
 
+/* Mobile Layout End */
 }
