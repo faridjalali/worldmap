@@ -117,11 +117,20 @@ async function initGame() {
 
     // Draw cities
     // Only show capitals for the active countries in this quiz
-    const activeCountryIds = new Set(filteredFeatures.map(f => pad3(f.id)));
-    // CLONE the cities to avoid mutating the global gameData across re-renders
-    const activeCities = window.gameData.capitals
-      .filter(c => activeCountryIds.has(pad3(c.countryId)))
-      .map(c => ({ ...c, latlng: [...c.latlng] })); 
+    // Construct activeCities list from the local gameData object
+    const activeCities = Object.values(gameData).map(country => {
+       const capitalName = country.capital;
+       // Find capital in the cities list (latlng might have been derived there)
+       // If strict matching fails, default to the first city (usually relevant)
+       const city = country.cities.find(c => c.name === capitalName) || country.cities[0];
+       
+       return {
+         ...city,
+         latlng: [...city.latlng], // Clone coordinate array to prevent mutation issues
+         countryId: country.id,
+         id: country.id // Use country ID for the city node ID
+       };
+    });
 
     // Correction: Apply same shifts to Cities as we did to Land Geometry
     if (continentParam === "oceania") {
@@ -131,21 +140,14 @@ async function initGame() {
          // Fiji (242): Shift -15 lon to match geometry shift
          if (cid === "242") {
             c.latlng[1] -= 15; // lng is index 1 in latlng array [lat, lng]
-            c.lng -= 15;       // Update flat property if used
          }
          
          // Vanuatu (548): Snap to visible geometry centroid
-         // The real capital (Port Vila) is on Efate, which might be missing in 110m map.
-         // We move the dot to the center of the LARGEST visible island.
          if (cid === "548") {
              const vFeature = filteredFeatures.find(f => pad3(f.id) === "548");
              if (vFeature) {
-                 // Use D3 centroid of the geometry which guarantees being "on" the shape broadly
-                 const center = d3.geoCentroid(vFeature);
-                 // Center is [lng, lat]
-                 c.latlng = [center[1], center[0]]; // [lat, lng]
-                 c.lng = center[0];
-                 c.lat = center[1];
+                 const center = d3.geoCentroid(vFeature); // returns [lng, lat]
+                 c.latlng = [center[1], center[0]]; // Store as [lat, lng]
              }
          }
        });
