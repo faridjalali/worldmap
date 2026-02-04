@@ -492,13 +492,19 @@ function adjustContinentGeometry(features, continent) {
       }
 
       // Russia (643): Remove parts near Alaska (Western Hemisphere)
-      // Filter out polygons that are primarily in the Western Hemisphere (negative longitude)
+      // Filter out polygons that appear on the far left (negative longitude, e.g. -170)
       if (id === "643" && f.geometry && f.geometry.type === "MultiPolygon") {
         f.geometry.coordinates = f.geometry.coordinates.filter(polygon => {
-          const centroid = d3.geoCentroid({type: "Polygon", coordinates: polygon});
-          // Russian mainland is ~20E to 180E. Chukotka tip is ~-170W.
-          // Keep if centroid is positive (Eastern Hemisphere)
-          return centroid[0] >= 0;
+          // Calculate average longitude of the exterior ring to be robust
+          const ring = polygon[0];
+          let sumLon = 0;
+          for (let i = 0; i < ring.length; i++) {
+            sumLon += ring[i][0];
+          }
+          const avgLon = sumLon / ring.length;
+          
+          // Russian mainland is positive longitude (average > 0). Alaska tip is negative.
+          return avgLon > -20; // Use -20 as a safe buffer (Mainland is > 20E)
         });
       }
     }
