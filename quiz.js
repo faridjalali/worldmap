@@ -68,6 +68,28 @@ async function initGame() {
     const world = topojson.feature(topo, topo.objects.countries);
     features = world.features;
 
+    // PATCH: Fix Disputed Territories (Somaliland, Kosovo)
+    // Natural Earth 110m often assigns ID -99 to disputed areas.
+    // We identify them by geography and reassign IDs to merge/activate them.
+    features.forEach(f => {
+      if (f.id === -99 || f.id === "-99") {
+        const centroid = d3.geoCentroid(f);
+        // Centroid [lng, lat]
+        
+        // Somaliland (Africa): approx lat 9.5, lng 46
+        // Bounding check: Lat 5-15, Lng 40-55
+        if (centroid[1] > 5 && centroid[1] < 15 && centroid[0] > 40 && centroid[0] < 55) {
+          f.id = "706"; // Somalia
+        }
+        
+        // Kosovo (Europe): approx lat 42.5, lng 21
+        // Bounding check: Lat 40-45, Lng 19-23
+        else if (centroid[1] > 40 && centroid[1] < 45 && centroid[0] > 19 && centroid[0] < 23) {
+          f.id = "383"; // Kosovo
+        }
+      }
+    });
+
     gameData = buildGameData(features, byCcn3, continentParam, cityDB);
 
     if (Object.keys(gameData).length === 0) {

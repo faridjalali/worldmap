@@ -81,7 +81,25 @@ async function initGlobe() {
     });
 
     const world = topojson.feature(topo, topo.objects.countries);
-    features = world.features.map(f => {
+    features = world.features;
+
+    // PATCH: Fix Disputed Territories (Somaliland, Kosovo)
+    features.forEach(f => {
+      if (f.id === -99 || f.id === "-99") {
+        const centroid = d3.geoCentroid(f);
+        // Somaliland -> Somalia
+        if (centroid[1] > 5 && centroid[1] < 15 && centroid[0] > 40 && centroid[0] < 55) {
+          f.id = "706";
+        }
+        // Kosovo
+        else if (centroid[1] > 40 && centroid[1] < 45 && centroid[0] > 19 && centroid[0] < 23) {
+          f.id = "383"; 
+        }
+      }
+    });
+
+    // Map features to continent/name AFTER patching IDs
+    features = features.map(f => {
       const meta = byCcn3.get(pad3(f.id));
       if (meta) {
         f.properties.continent = resolveContinent(meta);
