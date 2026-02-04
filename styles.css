@@ -651,22 +651,29 @@ body {
     top: 20px; /* Reduced top spacing for mobile */
   }
   
-  /* Supersized Mobile HUD (Narrower but Sleeker) */
+  /* Supersized Mobile HUD (Compact & Sleek) */
   #top-hud {
-    padding: 12px 15px; /* More side padding for sleek look */
-    gap: 2px;
-    width: 88%; /* Significantly narrower */
+    padding: 10px 20px;
+    gap: 20px; /* Horizontal gap between groups */
+    width: fit-content; /* Shrink to fit content */
+    min-width: 60%; /* Prevent being too tiny */
+    max-width: 95%;
     border-radius: 30px; 
-    justify-content: space-between; /* Spread items nicely */
+    justify-content: center;
+    margin: 0 auto; /* Ensure centering */
+  }
+  
+  .hud-group {
+    gap: 6px; /* Space between Label and Value */
   }
   
   .hud-item { 
-    font-size: 0.7rem; /* Increased size (Target/Score/Capital) */
+    font-size: 0.7rem; 
     letter-spacing: 0.5px;
     font-weight: 700;
   }
   .hud-val { 
-    font-size: 1.1rem; /* Balanced with new width */
+    font-size: 1.1rem; 
   }
 
   /* Back Button */
@@ -691,12 +698,13 @@ body {
     line-height: 1.1;
   }
   
-  /* Feedback Pillbox (Significantly Narrower) */
+  /* Feedback Pillbox (Fit to Text) */
   #sub-prompt {
     font-size: 0.9rem;
-    padding: 10px 25px; /* Healthy side margins */
+    padding: 10px 25px;
     border-radius: 40px;
-    width: 75%; /* Much narrower */
+    width: fit-content; /* Shrink to text */
+    max-width: 85%;
     box-shadow: 0 3px 10px rgba(0,0,0,0.5);
   }
 
