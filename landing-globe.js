@@ -141,7 +141,7 @@ async function initGlobe() {
 }
 
 const GLOBE_COLORS = {
-  ocean: "#006994", // Traditional Ocean Blue
+  ocean: "#004866", // Slightly Darker Ocean Blue (was #006994)
   continents: {
     "north-america": "#e6c288", // Sandy/Yellow
     "south-america": "#a8c686", // Muted Green
@@ -182,10 +182,10 @@ function render() {
        const cont = d.properties.continent;
        if (!cont) return;
        
-       // Highlight (brighten) all countries in this continent
+       // Highlight (DARKEN) all countries in this continent
        d3.selectAll(`.country[data-continent='${cont}']`)
-         .style("filter", "brightness(1.5)") // Popped/Brighter
-         .style("stroke", "rgba(255,255,255,0.8)") // Add white border pop
+         .style("filter", "brightness(0.7)") // Darken instead of brighten
+         .style("stroke", "rgba(255,255,255,0.6)")
          .style("stroke-width", "1px");
        
        // Show Tooltip

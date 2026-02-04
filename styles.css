@@ -1,6 +1,6 @@
 :root {
   /* Traditional Ocean Background (Deep Blue for contrast, but ocean-like) */
-  --bg-deep: #001e30; 
+  --bg-deep: #004866; /* Matched to Globe */ 
   /* Traditional Borders (Subtle Dark) */
   --map-stroke: rgba(0, 0, 0, 0.3);
   
@@ -75,13 +75,13 @@ body {
   opacity: 0.9;
   stroke: rgba(255, 255, 255, 0.8);
   stroke-width: 1px;
-  filter: brightness(1.2);
+  filter: brightness(0.8); /* Darken on hover */
 }
 .state.active-focused {
   opacity: 1;
   stroke: #fff;
   stroke-width: 2px;
-  filter: brightness(1.3);
+  filter: brightness(0.9);
 }
 
 /* Animation */
