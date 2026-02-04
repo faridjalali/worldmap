@@ -185,7 +185,7 @@ function render() {
     .style("stroke", GLOBE_COLORS.stroke)
     .style("stroke-width", "0.5px") // Explicit width for consistency
     .on("mouseover", function(e, d) {
-       if (isDragging || hasMoved) return; // Ignore if moving
+       if (isDragging) return; // Ignore if actively dragging
        const cont = d.properties.continent;
        if (!cont) return;
        
