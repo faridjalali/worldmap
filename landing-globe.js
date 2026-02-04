@@ -94,13 +94,28 @@ async function initGlobe() {
       
       if (dist > 5) hasMoved = true;
       
+      
+      // Throttled Rotation using requestAnimationFrame
+      // This prevents the high-frequency touch events from overwhelming the render loop
       const sensitivity = 75 / projection.scale();
       const rotate = projection.rotate();
-      projection.rotate([
+      
+      // Calculate new rotation based on drag
+      const nextRotate = [
         rotate[0] + event.dx * sensitivity,
         rotate[1] - event.dy * sensitivity
-      ]);
-      render();
+      ];
+      
+      projection.rotate(nextRotate);
+      
+      // Only render if we aren't already waiting for a frame
+      if (!window.renderRequested) {
+         window.renderRequested = true;
+         requestAnimationFrame(() => {
+            render();
+            window.renderRequested = false;
+         });
+      }
     })
     .on("end", () => {
       isDragging = false;
