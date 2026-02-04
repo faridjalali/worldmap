@@ -13,7 +13,6 @@ const SOURCES = {
 let width, height;
 let svg, g, projection, path;
 let features = [];
-let gameData = {}; // To store continent mapping
 let isDragging = false;
 let rotationTimer;
 
@@ -71,7 +70,7 @@ async function initGlobe() {
   const drag = d3.drag()
     .on("start", (event) => {
       isDragging = true;
-      hasMoved = false;
+      window.hasMoved = false;
       startX = event.x;
       startY = event.y;
     })
@@ -82,7 +81,7 @@ async function initGlobe() {
       const dist = Math.sqrt(dx*dx + dy*dy);
       
       // If we moved more than 5 pixels total, it's a drag
-      if (dist > 5) hasMoved = true;
+      if (dist > 5) window.hasMoved = true;
       
       const sensitivity = 75 / projection.scale();
       const rotate = projection.rotate();
@@ -101,27 +100,111 @@ async function initGlobe() {
   svg.call(drag)
      .style("touch-action", "none");
 
-  // ... (rest of setup) ...
+  try {
+    const topo = await fetchFirstOk(SOURCES.topo, "World Atlas");
+    const countries = await fetchFirstOk(SOURCES.countries, "World Countries");
 
-  // Render Logic - Ensure click works
+    // Build map from CCN3 to Continent
+    const byCcn3 = new Map();
+    countries.forEach(c => {
+      if (c.ccn3) byCcn3.set(pad3(c.ccn3), c);
+    });
+
+    // MANUAL INJECTION: Ensure Kosovo (383) exists for Globe
+    if (!byCcn3.has("383")) {
+      byCcn3.set("383", {
+        name: { common: "Kosovo" },
+        ccn3: "383",
+        region: "Europe",
+        subregion: "Southeast Europe"
+      });
+    }
+
+    const world = topojson.feature(topo, topo.objects.countries);
+    features = world.features;
+
+    // PATCH: Fix Disputed Territories (Somaliland, Kosovo)
+    features.forEach(f => {
+      if (f.id === -99 || f.id === "-99") {
+        const centroid = d3.geoCentroid(f);
+        // Somaliland -> Somalia
+        if (centroid[1] > 5 && centroid[1] < 15 && centroid[0] > 40 && centroid[0] < 55) {
+          f.id = "706";
+        }
+        // Kosovo
+        else if (centroid[1] > 40 && centroid[1] < 45 && centroid[0] > 19 && centroid[0] < 23) {
+          f.id = "383"; 
+        }
+      }
+    });
+
+    // Map features to continent/name AFTER patching IDs
+    features = features.map(f => {
+      const meta = byCcn3.get(pad3(f.id));
+      if (meta) {
+        f.properties.continent = resolveContinent(meta);
+        f.properties.name = meta.name.common;
+      }
+      return f;
+    });
+
+    // Start Persistent Loop
+    startRotationLoop();
+
+  } catch (err) {
+    console.error("Globe Init Error:", err);
+    container.innerHTML = `<div class='map-error'>Failed to load globe: ${err.message}</div>`;
+  }
+}
+
+const GLOBE_COLORS = {
+  ocean: "#004866", // Original Traditional Ocean (Lighter)
+  continents: {
+    "north-america": "#e6c288", // Sandy/Yellow
+    "south-america": "#a8c686", // Muted Green
+    "europe": "#d8a499",        // Muted Pink/Red
+    "africa": "#e8d8a5",        // Desert Yellow
+    "asia": "#c4a484",          // Earthy Brown
+    "oceania": "#99badd"        // Light Blue/Teal
+  },
+  default: "#d0d0d0",
+  stroke: "rgba(0,0,0,0.3)" // Original subtle borders
+};
+
+function render() {
+  // Define sphere background (ocean)
+  g.selectAll(".ocean").remove();
+  g.insert("path", ".country")
+    .datum({type: "Sphere"})
+    .attr("class", "ocean")
+    .attr("d", path) // Ensure path/projection is used
+    .attr("fill", GLOBE_COLORS.ocean)
+    .attr("stroke", "rgba(0, 0, 0, 0.5)")
+    .attr("stroke-width", 1);
+
+
   const countries = g.selectAll(".country")
     .data(features);
 
   countries.enter().append("path")
-    .attr("class", "country globe-country")
+    .attr("class", "country globe-country") // Added specific class
     .merge(countries)
     .attr("d", path)
     .attr("data-continent", d => d.properties.continent)
     .style("fill", d => GLOBE_COLORS.continents[d.properties.continent] || GLOBE_COLORS.default)
     .style("stroke", GLOBE_COLORS.stroke)
     .on("mouseover", function(e, d) {
-       if (isDragging || hasMoved) return; // Don't highlight if dragging
+       if (isDragging) return;
        const cont = d.properties.continent;
        if (!cont) return;
+       
+       // Highlight (DARKEN) all countries in this continent
        d3.selectAll(`.country[data-continent='${cont}']`)
-         .style("filter", "brightness(0.7)") 
+         .style("filter", "brightness(0.7)") // Darken instead of brighten
          .style("stroke", "rgba(255,255,255,0.6)")
          .style("stroke-width", "1px");
+       
+       // Show Tooltip
        const tt = document.getElementById("continent-tooltip");
        tt.innerText = formatContinentName(cont);
        tt.style.opacity = 1;
@@ -130,21 +213,33 @@ async function initGlobe() {
     })
     .on("mouseout", function(e, d) {
        const cont = d.properties.continent;
-       d3.selectAll(`.country[data-continent='${cont}']`)
-         .style("filter", null)
-         .style("stroke", GLOBE_COLORS.stroke)
-         .style("stroke-width", null);
+       if (cont) {
+          d3.selectAll(`.country[data-continent='${cont}']`)
+            .style("filter", null)
+            .style("stroke", GLOBE_COLORS.stroke)
+            .style("stroke-width", null);
+       }
        document.getElementById("continent-tooltip").style.opacity = 0;
     })
     .on("click", function(e, d) {
        // Robust check: If we moved, it's a drag, ignore click.
-       if (hasMoved) return; 
+       // We need to access hasMoved from the drag scope? 
+       // d3 drag handler is closure. 
+       // We can just rely on isDragging? No, drag end sets isDragging false.
+       // We need a shared var. We defined hasMoved in initGlobe scope, but render is outside.
+       // WAIT. hasMoved is defined inside initGlobe in my write, BUT render is OUTSIDE initGlobe.
+       // hasMoved is NOT accessible in render!
+       // I must move 'hasMoved' to global scope or pass it.
+       // I will move 'hasMoved' to top level let.
+       
+       if (window.hasMoved) return; 
        
        const cont = d.properties.continent;
        if (cont) {
          window.location.href = `./quiz.html?continent=${cont}`;
        }
     });
+}
 
 function startRotationLoop() {
   // Single persistent timer
@@ -176,7 +271,6 @@ function handleResize() {
   render();
 }
 
-// Reuse helpers from index.js / quiz.js (duplicated effectively since modules don't share easily without refactor)
 function pad3(n) {
   const s = String(n);
   return s.length >= 3 ? s : s.padStart(3, "0");
@@ -217,3 +311,6 @@ async function fetchFirstOk(urls, label) {
   }
   throw new Error(`${label} failed.`);
 }
+
+// Ensure hasMoved is global
+window.hasMoved = false; 
