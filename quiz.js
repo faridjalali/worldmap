@@ -407,10 +407,13 @@ function startRound() {
   visited.add(currentTargetID);
 
   currentPhase = "MAP_SELECTION";
-  resetZoom();
+  
+  // Cleanup artifacts IMMEDIATELY before starting animations
+  d3.selectAll(".city-node, .city-halo").remove(); 
   d3.selectAll(".state").classed("active-focused", false);
-  d3.selectAll(".city-node, .city-halo").remove();
   document.getElementById("fact-overlay").classList.remove("show");
+  
+  resetZoom();
 
   const targetData = gameData[currentTargetID];
   document.getElementById("find-label").innerText = "Find Country";
