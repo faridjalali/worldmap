@@ -642,31 +642,32 @@ body {
   }
   
   #top-hud {
-    /* Mobile HUD adjustments - Keep large but fit screen */
-    padding: 15px 10px; /* Maximize internal space */
-    gap: 10px; 
-    width: 96%; /* Use full width */
+    /* Mobile HUD adjustments - Maximum Size */
+    padding: 18px 5px; /* Taller, max width usage */
+    gap: 8px; /* Tight gap */
+    width: 98%; /* Edge to edge */
     justify-content: space-evenly;
     transform: scale(1);
-    background: rgba(15, 15, 15, 0.95); /* More opaque for readability */
+    background: rgba(15, 15, 15, 0.95);
+    border-radius: 40px; /* Slightly squarer to fit content */
   }
   .hud-group { min-width: auto; }
   .hud-item { 
-    font-size: 0.8rem; /* readable label */
-    letter-spacing: 1px;
+    font-size: 0.9rem; /* Very legible labels */
+    letter-spacing: 0.5px;
+    font-weight: 800;
   } 
   .hud-val { 
-    font-size: 1.4rem; /* Big numbers */
+    font-size: 1.6rem; /* Huge numbers */
   }
   
   .back-btn {
-    /* Mobile back button */
-    left: 10px;
-    width: 36px;
-    height: 36px;
-    /* top/transform already handled by parent centering */
+    /* Mobile back button - Scaled Up */
+    left: 8px;
+    width: 44px; /* Desktop size on mobile */
+    height: 44px;
   }
-  .back-btn svg { width: 18px; height: 18px; }
+  .back-btn svg { width: 24px; height: 24px; }
   
   /* Shift HUD slightly right to make room for back btn if needed, 
      but since HUD is centered and back btn is absolute left, 
