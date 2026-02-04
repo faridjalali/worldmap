@@ -463,7 +463,9 @@ function transitionToCityPhase(geoData, id) {
 
   const data = gameData[id];
   document.getElementById("find-label").innerText = "Find City";
-  document.getElementById("sub-prompt").innerText = "";
+  const sp = document.getElementById("sub-prompt");
+  sp.innerText = "";
+  sp.classList.remove("persist"); // Reset state
 
   const cityChoices = data.cities.slice(0, 3);
 
@@ -474,7 +476,11 @@ function transitionToCityPhase(geoData, id) {
     const target = cityChoices[Math.floor(Math.random() * cityChoices.length)];
     targetCityName = target.name;
     document.getElementById("main-prompt").innerText = "Identify City";
-    document.getElementById("sub-prompt").innerText = `"${target.fact}"`;
+    const sp = document.getElementById("sub-prompt");
+    sp.innerText = `"${target.fact}"`;
+    sp.classList.add("persist"); // Keep visible indefinitely
+    // Clear any pending timeout from previous errors to avoid auto-hide
+    if (feedbackTimer) clearTimeout(feedbackTimer);
   }
 
   // Lock toggle during city phase
@@ -531,8 +537,8 @@ function handleCityClick(event, cityNode, id) {
       // Show modal with target fact as reminder
       showFact(cityNode.name, id, "INCORRECT", "status-wrong", clickedCityFact, "Try Again", closeOverlay);
     } else {
-       // Capital mode - standard feedback
-       document.getElementById("sub-prompt").innerHTML = `That is <span style="color:#000000; font-weight:bold;">${cityNode.name}</span>. Try again.`;
+       // Capital mode - standard feedback (Redirection to Error Pill)
+       showFeedback(`That is <span style="color:#000000; font-weight:bold;">${cityNode.name}</span>. Try again.`);
     }
   }
 }

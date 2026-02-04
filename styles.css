@@ -311,7 +311,7 @@ body {
   transition: opacity 0.3s;
 }
 
-#sub-prompt.show {
+#sub-prompt.show, #sub-prompt.persist {
   opacity: 1 !important;
   visibility: visible !important;
 }
