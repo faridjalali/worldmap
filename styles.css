@@ -469,11 +469,11 @@ body {
   overflow: hidden;
   background:
     radial-gradient(
-      1200px 600px at 50% -10%,
-      rgba(0, 243, 255, 0.12),
+      1200px 600px at 50% 110%, /* Moved glow to Bottom */
+      rgba(0, 243, 255, 0.15),
       transparent 60%
     ),
-    linear-gradient(180deg, #050505, #0c0c0c); /* Black for Landing */
+    linear-gradient(180deg, #000000 0%, #0c0c0c 100%); /* Pure Black (Top) -> Dark Grey (Bottom) */
 }
 
 .landing-shell {
