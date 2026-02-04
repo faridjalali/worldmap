@@ -225,12 +225,13 @@ body {
   /* Removed top/left/transform */
   background: var(--glass);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 10px 30px;
-  border-radius: 50px;
+  padding: 15px 40px; /* Larger padding */
+  border-radius: 60px;
   display: flex;
-  gap: 40px;
+  gap: 50px; /* More spacing */
   backdrop-filter: blur(15px);
   pointer-events: auto;
+  transform: scale(1.1); /* Slight overall scale up */
 }
 
 /* Back Button */
@@ -268,15 +269,16 @@ body {
   min-width: 70px;
 }
 .hud-item {
-  font-size: 0.7rem;
-  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85rem; /* Larger labels */
+  color: rgba(255, 255, 255, 0.6);
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 2px;
+  font-weight: 700; /* Bold labels */
 }
 .hud-val {
   color: var(--neon-blue);
   font-weight: 800;
-  font-size: 1.2rem;
+  font-size: 1.5rem; /* Large numbers */
 }
 
 .toggle-container {
@@ -339,16 +341,18 @@ body {
   }
 }
 #find-label {
-  font-size: 1.2rem;
+  font-size: 1.4rem; /* Larger prompt */
   text-transform: uppercase;
-  color: #888;
+  color: #aaa;
   letter-spacing: 4px;
   margin: 0;
+  font-weight: 600;
 }
 #main-prompt {
-  font-size: 2rem;
+  font-size: 3rem; /* Massive Country Name */
   font-weight: 900;
-  margin: 5px 0 0;
+  margin: 10px 0 0;
+  letter-spacing: 1px;
 }
 #sub-prompt {
   font-size: 1.1rem;
@@ -638,15 +642,16 @@ body {
   }
   
   #top-hud {
-    /* Mobile HUD adjustments */
-    padding: 8px 20px;
-    gap: 20px;
-    width: 80%; /* Width constrained */
-    justify-content: space-around;
+    /* Mobile HUD adjustments - Keep large but fit screen */
+    padding: 12px 25px; 
+    gap: 15px; /* Tighter gap but large items */
+    width: 90%; 
+    justify-content: space-evenly;
+    transform: scale(1); /* Reset scale but use large fonts */
   }
   .hud-group { min-width: auto; }
-  .hud-item { font-size: 0.6rem; }
-  .hud-val { font-size: 1rem; }
+  .hud-item { font-size: 0.75rem; } /* Readable labels */
+  .hud-val { font-size: 1.3rem; } /* Readable numbers */
   
   .back-btn {
     /* Mobile back button */
