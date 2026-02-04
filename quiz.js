@@ -43,7 +43,7 @@ async function initGame() {
     .attr("preserveAspectRatio", "xMidYMid meet");
   g = svg.append("g");
 
-  zoom = d3.zoom().scaleExtent([1, 15]).on("zoom", (e) => {
+  zoom = d3.zoom().scaleExtent([1, 50]).on("zoom", (e) => {
     g.attr("transform", e.transform);
     currentScale = e.transform.k;
 

@@ -72,11 +72,6 @@ async function initGlobe() {
       isDragging = false;
       // Restart rotation with a slight delay to avoid "catch-release" jumpiness
       setTimeout(startRotation, 200); 
-    })
-    // Ensure we catch distractions/cancellations
-    .on("cancel", () => { 
-       isDragging = false; 
-       startRotation();
     });
     
   // Explicitly add a touchstart listener to the MAIN CONTAINER or SVG to stop occasional stickiness?
