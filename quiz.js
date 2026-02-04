@@ -435,9 +435,22 @@ function handleStateClick(event, d) {
     score -= 10; updateScoreUI();
     flashState(this, "wrong");
     const wrongName = gameData[clickedID].name;
-    document.getElementById("sub-prompt").innerHTML =
-      `That is <span style="color:#000000; font-weight:bold;">${wrongName}</span>. Try again.`;
+    // Show ephemeral feedback
+    showFeedback(`That is <span style="color:#000000; font-weight:bold;">${wrongName}</span>. Try again.`);
   }
+}
+
+// Helper for Ephemeral Message
+let feedbackTimer;
+function showFeedback(html) {
+  const el = document.getElementById("sub-prompt");
+  el.innerHTML = html;
+  el.classList.add("show");
+  
+  if (feedbackTimer) clearTimeout(feedbackTimer);
+  feedbackTimer = setTimeout(() => {
+    el.classList.remove("show");
+  }, 3000);
 }
 
 function transitionToCityPhase(geoData, id) {

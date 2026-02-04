@@ -106,7 +106,7 @@ body {
 }
 @keyframes flashError {
   0% {
-    fill: var(--neon-pink);
+    fill: var(--neon-pink); /* Red-Pink for error */
     opacity: 1;
   }
   100% {
@@ -305,6 +305,11 @@ body {
   box-shadow: 0 4px 15px rgba(0,0,0,0.5); /* Depth */
   margin-top: 15px; /* More spacing */
   font-weight: 600;
+  opacity: 0; /* Hidden by default */
+  transition: opacity 0.3s;
+}
+#sub-prompt.show {
+  opacity: 1;
 }
 
 #fact-overlay {
