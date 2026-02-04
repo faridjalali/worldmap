@@ -443,11 +443,11 @@ function handleStateClick(event, d) {
 // Helper for Ephemeral Message
 let feedbackTimer;
 function showFeedback(html) {
-  const el = document.getElementById("sub-prompt");
+  const el = document.getElementById("error-feedback");
   if (!el) return;
   el.innerHTML = html;
   el.classList.add("show");
-  // Force reflow to ensure transition? Not usually needed but safety.
+  // Force reflow
   void el.offsetWidth;
   
   if (feedbackTimer) clearTimeout(feedbackTimer);
@@ -474,7 +474,9 @@ function transitionToCityPhase(geoData, id) {
     const target = cityChoices[Math.floor(Math.random() * cityChoices.length)];
     targetCityName = target.name;
     document.getElementById("main-prompt").innerText = "Identify City";
-    document.getElementById("sub-prompt").innerText = `"${target.fact}"`;
+    const sp = document.getElementById("sub-prompt");
+    sp.innerText = `"${target.fact}"`;
+    sp.classList.add("static-mode"); // Make Fact Visible Persistent
   }
 
   // Lock toggle during city phase

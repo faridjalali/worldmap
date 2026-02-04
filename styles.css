@@ -83,8 +83,8 @@ body {
 }
 .state.active-focused {
   opacity: 1;
-  stroke: #fff;
-  stroke-width: 2px;
+  stroke: #000000; /* Force Black */
+  stroke-width: 1px; /* Full Thickness */
   filter: brightness(0.9);
 }
 
@@ -296,23 +296,41 @@ body {
   font-weight: 900;
   margin: 5px 0 0;
 }
-#sub-prompt {
+#sub-prompt, #error-feedback {
   font-size: 1.1rem;
   color: #000000; /* Black Text */
-  background-color: #ffffff; /* White Background for max contrast */
+  background-color: #ffffff; /* White Background */
   display: inline-block;
   padding: 8px 24px;
   border-radius: 50px; /* Pill shape */
-  box-shadow: 0 4px 15px rgba(0,0,0,0.5); /* Depth */
-  margin-top: 15px; /* More spacing */
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  margin-top: 15px;
   font-weight: 600;
   opacity: 0; /* Hidden by default */
   transition: opacity 0.3s;
 }
-#sub-prompt.show {
+
+/* Sub-prompt visible when holding static content (Fact) */
+#sub-prompt.static-mode {
   opacity: 1 !important;
   visibility: visible !important;
 }
+
+#error-feedback {
+  position: absolute; /* Float over/near */
+  left: 50%;
+  transform: translateX(-50%);
+  top: 100%; /* Below main prompt */
+  width: max-content;
+  z-index: 20;
+}
+
+#error-feedback.show {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+#fact-overlay {
 
 #fact-overlay {
   position: fixed;
