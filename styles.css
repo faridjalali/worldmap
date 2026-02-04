@@ -676,12 +676,21 @@ body {
     font-size: 1.1rem; 
   }
 
-  /* Back Button */
+  /* Back Button (Bottom Right for Mobile) */
   .back-btn {
-    left: 8px;
-    width: 42px; 
-    height: 42px;
+    position: fixed;
+    top: auto;
+    left: auto;
+    transform: none; /* Remove vertical centering */
+    right: 25px; /* Healthy side margin */
+    bottom: 35px; /* Healthy bottom margin */
+    width: 44px; 
+    height: 44px;
+    background: rgba(15, 15, 15, 0.8); /* Ensure visibility */
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    z-index: 1000;
   }
+  .back-btn:hover { transform: scale(1.1); } /* Simple scale on active */
   .back-btn svg { width: 24px; height: 24px; }
 
   /* Prompts */
