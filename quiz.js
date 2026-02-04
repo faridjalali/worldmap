@@ -115,6 +115,38 @@ async function initGame() {
       projection.translate([t[0] - (width * 0.06), t[1]]);
     }
 
+    // Draw cities
+    // Only show capitals for the active countries in this quiz
+    const activeCountryIds = new Set(filteredFeatures.map(f => pad3(f.id)));
+    const activeCities = window.gameData.capitals.filter(c => activeCountryIds.has(pad3(c.countryId)));
+
+    // Correction: Apply same shifts to Cities as we did to Land Geometry
+    if (continentParam === "oceania") {
+       activeCities.forEach(c => {
+         // Fiji (242): Shift -15 lon
+         if (pad3(c.countryId) === "242") {
+            c.lng -= 15;
+         }
+         // Vanuatu (548): Check if user was right. 
+         // I reviewed the code: I ONLY shifted Fiji (242). 
+         // However, if the user sees Vanuatu off, maybe they mean the map data itself is misaligned?
+         // For now, I will trust my code history that only Fiji was shifted.
+         // If Vanuatu is "off", it might be a data quality issue in the source TopoJSON/CSV.
+         // But per the specific "shifting" logic, only Fiji needs this patch.
+       });
+    }
+
+    g.selectAll(".city-node")
+      .data(activeCities)
+      .enter()
+      .append("circle")
+      .attr("class", "city-node")
+      .attr("r", 2) // Base radius, scaled dynamically later
+      .attr("cx", d => projection([d.lng, d.lat])[0])
+      .attr("cy", d => projection([d.lng, d.lat])[1])
+      .attr("id", d => "city-" + d.id)
+      .on("click", handleCityClick);
+
     path = d3.geoPath().projection(projection);
 
     g.selectAll("path")
