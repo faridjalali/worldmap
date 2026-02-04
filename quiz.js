@@ -115,50 +115,56 @@ async function initGame() {
       projection.translate([t[0] - (width * 0.06), t[1]]);
     }
 
-    // Draw cities
-    // Only show capitals for the active countries in this quiz
-    // Construct activeCities list from the local gameData object
-    const activeCities = Object.values(gameData).map(country => {
-       const capitalName = country.capital;
-       // Find capital in the cities list (latlng might have been derived there)
-       // If strict matching fails, default to the first city (usually relevant)
-       const city = country.cities.find(c => c.name === capitalName) || country.cities[0];
-       
-       return {
-         ...city,
-         latlng: [...city.latlng], // Clone coordinate array to prevent mutation issues
-         countryId: country.id,
-         id: country.id // Use country ID for the city node ID
-       };
-    });
-
-    // Correction: Apply same shifts to Cities as we did to Land Geometry
+    // Correction: Apply same shifts to Cities in gameData to match Land Geometry
     if (continentParam === "oceania") {
-       activeCities.forEach(c => {
-         const cid = pad3(c.countryId);
-         
-         // Fiji (242): Shift -15 lon to match geometry shift
+       Object.values(gameData).forEach(country => {
+         const cid = pad3(country.id);
+
+         // Fiji (242): Shift -15 lon for ALL cities
          if (cid === "242") {
-            c.latlng[1] -= 15; // lng is index 1 in latlng array [lat, lng]
+            country.cities.forEach(c => {
+               c.latlng[1] -= 15;
+            });
+            // Also shift the capital entry stored at root level if I added it? 
+            // buildGameData adds capital to .cities list. 
+            // But we should double check if anything else needs shifting.
          }
-         
-         // Vanuatu (548): Snap to visible geometry centroid
+
+         // Vanuatu (548): Snap ALL cities to visible geometry? 
+         // Realistically, only Port Vila (Capital) is the issue on the missing island.
          if (cid === "548") {
              const vFeature = filteredFeatures.find(f => pad3(f.id) === "548");
              if (vFeature) {
-                 const center = d3.geoCentroid(vFeature); // returns [lng, lat]
-                 c.latlng = [center[1], center[0]]; // Store as [lat, lng]
+                 const center = d3.geoCentroid(vFeature); // [lng, lat]
+                 
+                 // Find capital and snap it
+                 const capitalCity = country.cities.find(c => c.name === country.capital);
+                 if (capitalCity) {
+                     capitalCity.latlng = [center[1], center[0]]; // [lat, lng]
+                 }
              }
          }
        });
     }
+
+    // Draw cities (Initial view - usually cleared by startRound but good for debugging or background)
+    // Only show capitals for the active countries in this quiz
+    const activeCities = Object.values(gameData).map(country => {
+       const capitalName = country.capital;
+       const city = country.cities.find(c => c.name === capitalName) || country.cities[0];
+       return {
+         ...city,
+         countryId: country.id,
+         id: country.id
+       };
+    });
 
     g.selectAll(".city-node")
       .data(activeCities)
       .enter()
       .append("circle")
       .attr("class", "city-node")
-      .attr("r", 2) // Base radius, scaled dynamically later
+      .attr("r", 2)
       .attr("cx", d => projection([d.latlng[1], d.latlng[0]])[0])
       .attr("cy", d => projection([d.latlng[1], d.latlng[0]])[1])
       .attr("id", d => "city-" + d.id)
