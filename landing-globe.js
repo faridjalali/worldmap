@@ -32,6 +32,25 @@ window.addEventListener("load", () => {
 });
 window.addEventListener("resize", handleResize);
 
+// Fix for Back Button: Reset state when page is shown (even from cache)
+window.addEventListener("pageshow", (event) => {
+  // Hide Tooltip
+  const tt = document.getElementById("continent-tooltip");
+  if (tt) tt.style.opacity = 0;
+  
+  // Clear any active hover highlights
+  if (g) {
+     g.selectAll(".country")
+      .style("filter", null)
+      .style("stroke", GLOBE_COLORS.stroke)
+      .style("stroke-width", null);
+  }
+  
+  // Reset Flags
+  isDragging = false;
+  hasMoved = false;
+});
+
 // Traditional Palette
 const GLOBE_COLORS = {
   ocean: "#004866", 
