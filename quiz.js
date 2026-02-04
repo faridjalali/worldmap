@@ -497,6 +497,16 @@ function plotCities(id, cityChoices) {
 
   const { r } = getDotStyle();
 
+  // Halos (Throb Effect)
+  g.selectAll(".city-halo")
+    .data(nodes)
+    .enter().append("circle")
+    .attr("class", "city-halo")
+    .attr("cx", d => d.x)
+    .attr("cy", d => d.y)
+    .attr("r", r)
+    .style("pointer-events", "none");
+
   g.selectAll(".city-node")
     .data(nodes)
     .enter().append("circle")
