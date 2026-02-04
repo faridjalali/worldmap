@@ -297,8 +297,14 @@ body {
 }
 #sub-prompt {
   font-size: 1.1rem;
-  color: #000000; /* Black for visibility */
-  margin-top: 8px;
+  color: #000000; /* Black Text */
+  background-color: #ffffff; /* White Background for max contrast */
+  display: inline-block;
+  padding: 8px 24px;
+  border-radius: 50px; /* Pill shape */
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5); /* Depth */
+  margin-top: 15px; /* More spacing */
+  font-weight: 600;
 }
 
 #fact-overlay {
