@@ -17,13 +17,30 @@ let gameData = {}; // To store continent mapping
 let isDragging = false;
 let rotationTimer;
 
-window.addEventListener("load", initGlobe);
+window.addEventListener("load", () => {
+   if (window.d3) {
+      initGlobe();
+   } else {
+      // Fallback: wait a bit if D3 is racing
+      const checkD3 = setInterval(() => {
+         if (window.d3) {
+            clearInterval(checkD3);
+            initGlobe();
+         }
+      }, 50);
+   }
+});
 window.addEventListener("resize", handleResize);
 
 async function initGlobe() {
   const container = document.getElementById("continent-map");
   if (!container) return;
-
+  // Safety check for D3 again
+  if (!window.d3) {
+     console.error("D3 loading failed.");
+     return;
+  }
+// ... rest of initGlobe logic unchanged ...
   width = container.clientWidth;
   height = container.clientHeight;
 
