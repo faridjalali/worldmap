@@ -42,6 +42,16 @@ body {
   display: none !important;
 }
 
+/* Quiz View Specifics */
+#view-quiz {
+  background-color: var(--bg-deep);
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 10; /* Ensure it sits on top if needed, though visibility toggles handle it */
+}
+
 #map-stage {
   width: 100%;
   height: 100%;
@@ -463,7 +473,7 @@ body {
       rgba(0, 243, 255, 0.12),
       transparent 60%
     ),
-    linear-gradient(180deg, var(--bg-deep), #00334d); /* Deep Blue Gradient */
+    linear-gradient(180deg, #050505, #0c0c0c); /* Black for Landing */
 }
 
 .landing-shell {
