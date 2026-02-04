@@ -1,6 +1,9 @@
 :root {
-  --bg-deep: #050505;
-  --map-stroke: rgba(255, 255, 255, 0.6);
+  /* Traditional Ocean Background (Deep Blue for contrast, but ocean-like) */
+  --bg-deep: #001e30; 
+  /* Traditional Borders (Subtle Dark) */
+  --map-stroke: rgba(0, 0, 0, 0.3);
+  
   --neon-blue: #00f3ff;
   --neon-pink: #ff0055;
   --neon-green: #00ff9d;
@@ -8,12 +11,13 @@
   --glass: rgba(15, 15, 15, 0.85);
   --font-main: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
-  --c-na: rgba(255, 120, 120, 0.55);
-  --c-sa: rgba(255, 195, 120, 0.55);
-  --c-eu: rgba(140, 200, 255, 0.55);
-  --c-af: rgba(120, 255, 190, 0.55);
-  --c-as: rgba(190, 160, 255, 0.55);
-  --c-oc: rgba(255, 150, 220, 0.55);
+  /* Traditional Continent Colors from Globe */
+  --c-na: #e6c288; /* Sandy/Yellow */
+  --c-sa: #a8c686; /* Muted Green */
+  --c-eu: #d8a499; /* Muted Pink/Red */
+  --c-af: #e8d8a5; /* Desert Yellow */
+  --c-as: #c4a484; /* Earthy Brown */
+  --c-oc: #99badd; /* Light Blue/Teal */
 }
 
 * {
@@ -68,14 +72,16 @@ body {
 }
 
 .state:hover {
-  opacity: 0.8;
-  stroke: rgba(255, 255, 255, 0.6);
+  opacity: 0.9;
+  stroke: rgba(255, 255, 255, 0.8);
   stroke-width: 1px;
+  filter: brightness(1.2);
 }
 .state.active-focused {
   opacity: 1;
   stroke: #fff;
   stroke-width: 2px;
+  filter: brightness(1.3);
 }
 
 /* Animation */
@@ -408,7 +414,7 @@ body {
 }
 
 .country {
-  fill: rgba(120, 180, 220, 0.22);
+  fill: #d0d0d0; /* Default Grey/Paper color */
   stroke: rgba(255, 255, 255, 0.6);
   stroke-width: 0.5;
   transition:
