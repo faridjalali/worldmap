@@ -112,8 +112,11 @@ async function initGlobe() {
       if (!window.renderRequested) {
          window.renderRequested = true;
          requestAnimationFrame(() => {
-            render();
-            window.renderRequested = false;
+            try {
+               render();
+            } finally {
+               window.renderRequested = false;
+            }
          });
       }
     })
