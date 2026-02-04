@@ -643,15 +643,21 @@ body {
   
   #top-hud {
     /* Mobile HUD adjustments - Keep large but fit screen */
-    padding: 12px 25px; 
-    gap: 15px; /* Tighter gap but large items */
-    width: 90%; 
+    padding: 15px 10px; /* Maximize internal space */
+    gap: 10px; 
+    width: 96%; /* Use full width */
     justify-content: space-evenly;
-    transform: scale(1); /* Reset scale but use large fonts */
+    transform: scale(1);
+    background: rgba(15, 15, 15, 0.95); /* More opaque for readability */
   }
   .hud-group { min-width: auto; }
-  .hud-item { font-size: 0.75rem; } /* Readable labels */
-  .hud-val { font-size: 1.3rem; } /* Readable numbers */
+  .hud-item { 
+    font-size: 0.8rem; /* readable label */
+    letter-spacing: 1px;
+  } 
+  .hud-val { 
+    font-size: 1.4rem; /* Big numbers */
+  }
   
   .back-btn {
     /* Mobile back button */
