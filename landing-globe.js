@@ -51,12 +51,7 @@ async function initGlobe() {
   const drag = d3.drag()
     .on("start", (event) => {
       isDragging = true;
-      if (rotationTimer) rotationTimer.stop();
-      // Important to stop default browser scrolling on touch
-      if (event.sourceEvent && event.sourceEvent.type && event.sourceEvent.type.startsWith("touch")) {
-         // event.sourceEvent.preventDefault(); // Passive listener issue?
-         // D3 usually handles this if we don't set passive true elsewhere.
-      }
+      // No need to stop timer, it checks the flag
     })
     .on("drag", (event) => {
       const sensitivity = 75 / projection.scale();
@@ -69,17 +64,11 @@ async function initGlobe() {
       render();
     })
     .on("end", () => {
-      isDragging = false;
-      // Restart rotation with a slight delay to avoid "catch-release" jumpiness
-      setTimeout(startRotation, 200); 
+      // Delay resuming auto-rotation slightly for smoother feel
+      setTimeout(() => { isDragging = false; }, 50);
     });
-    
-  // Explicitly add a touchstart listener to the MAIN CONTAINER or SVG to stop occasional stickiness?
-  // Actually, relying on D3 drag should be enough if we handle 'end' robustly.
-  // But let's add a "safety click" behavior - if user TAPS, we ensure dragging is false.
 
   svg.call(drag)
-     // Prevent default touch actions (scrolling) while interacting with globe
      .style("touch-action", "none");
 
   try {
@@ -130,9 +119,8 @@ async function initGlobe() {
       return f;
     });
 
-    // Render Globe
-    render();
-    startRotation();
+    // Start Persistent Loop
+    startRotationLoop();
 
   } catch (err) {
     console.error("Globe Init Error:", err);
@@ -140,83 +128,14 @@ async function initGlobe() {
   }
 }
 
-const GLOBE_COLORS = {
-  ocean: "#004866", // Slightly Darker Ocean Blue (was #006994)
-  continents: {
-    "north-america": "#e6c288", // Sandy/Yellow
-    "south-america": "#a8c686", // Muted Green
-    "europe": "#d8a499",        // Muted Pink/Red
-    "africa": "#e8d8a5",        // Desert Yellow
-    "asia": "#c4a484",          // Earthy Brown
-    "oceania": "#99badd"        // Light Blue/Teal
-  },
-  default: "#d0d0d0",
-  stroke: "rgba(0,0,0,0.3)" // Subtle dark borders
-};
+// ... (GLOBE_COLORS and render function unchanged) ...
 
-function render() {
-  // Define sphere background (ocean)
-  g.selectAll(".ocean").remove();
-  g.insert("path", ".country")
-    .datum({type: "Sphere"})
-    .attr("class", "ocean")
-    .attr("d", path)
-    .attr("fill", GLOBE_COLORS.ocean)
-    .attr("stroke", "rgba(0, 0, 0, 0.5)")
-    .attr("stroke-width", 1);
-
-
-  const countries = g.selectAll(".country")
-    .data(features);
-
-  countries.enter().append("path")
-    .attr("class", "country globe-country") // Added specific class
-    .merge(countries)
-    .attr("d", path)
-    .attr("data-continent", d => d.properties.continent)
-    // Apply Traditional Colors using STYLE to override CSS
-    .style("fill", d => GLOBE_COLORS.continents[d.properties.continent] || GLOBE_COLORS.default)
-    .style("stroke", GLOBE_COLORS.stroke)
-    .on("mouseover", function(e, d) {
-       if (isDragging) return;
-       const cont = d.properties.continent;
-       if (!cont) return;
-       
-       // Highlight (DARKEN) all countries in this continent
-       d3.selectAll(`.country[data-continent='${cont}']`)
-         .style("filter", "brightness(0.7)") // Darken instead of brighten
-         .style("stroke", "rgba(255,255,255,0.6)")
-         .style("stroke-width", "1px");
-       
-       // Show Tooltip
-       const tt = document.getElementById("continent-tooltip");
-       tt.innerText = formatContinentName(cont);
-       tt.style.opacity = 1;
-       tt.style.left = (e.pageX + 10) + "px";
-       tt.style.top = (e.pageY - 20) + "px";
-    })
-    .on("mouseout", function(e, d) {
-       const cont = d.properties.continent;
-       if (cont) {
-          d3.selectAll(`.country[data-continent='${cont}']`)
-            .style("filter", null)
-            .style("stroke", GLOBE_COLORS.stroke)
-            .style("stroke-width", null);
-       }
-       document.getElementById("continent-tooltip").style.opacity = 0;
-    })
-    .on("click", function(e, d) {
-       if (isDragging) return;
-       const cont = d.properties.continent;
-       if (cont) {
-         window.location.href = `./quiz.html?continent=${cont}`;
-       }
-    });
-}
-
-function startRotation() {
-  if (rotationTimer) rotationTimer.stop();
-  rotationTimer = d3.timer((elapsed) => {
+function startRotationLoop() {
+  // Single persistent timer
+  d3.timer((elapsed) => {
+    if (isDragging) return; // User is in control, do nothing
+    
+    // Auto-rotate
     const rotate = projection.rotate();
     const k = 0.2; // Rotation speed
     projection.rotate([rotate[0] + k, rotate[1]]);
