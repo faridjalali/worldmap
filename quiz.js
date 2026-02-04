@@ -443,7 +443,7 @@ function handleStateClick(event, d) {
     flashState(this, "wrong");
     const wrongName = gameData[clickedID].name;
     // Show ephemeral feedback
-    showFeedback(`That is <span style="color:#000000; font-weight:bold;">${wrongName}</span>. Try again.`);
+    showFeedback(`That is <span style="font-weight:900;">${wrongName}</span>. Try again.`);
   }
 }
 
