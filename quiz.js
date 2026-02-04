@@ -478,45 +478,52 @@ function flashState(el, type) {
 }
 
 function adjustContinentGeometry(features, continent) {
+  // Helper to shift coords
+  const shiftCoords = (geometry, conditionFn, shiftFn) => {
+    const transformRing = (ring) => ring.map(pt => conditionFn(pt) ? shiftFn(pt) : pt);
+    const transformPoly = (poly) => poly.map(transformRing);
+
+    if (geometry.type === "Polygon") {
+      geometry.coordinates = transformPoly(geometry.coordinates);
+    } else if (geometry.type === "MultiPolygon") {
+      geometry.coordinates = geometry.coordinates.map(transformPoly);
+    }
+  };
+
   for (const f of features) {
     const id = pad3(f.id);
 
     if (continent === "europe") {
-      // France (250) and Russia (643): Remove Western Hemisphere territories
-      // Filter out polygons with any point West of -40 longitude.
-      // - French Guiana (~-53) -> Removed
-      // - Alaska Tip (~-170) -> Removed
-      // - Kaliningrad (~20) -> Kept
-      // - Mainland (~-5 to 180) -> Kept
-      if (["250", "643"].includes(id) && f.geometry && f.geometry.type === "MultiPolygon") {
+      // France (250): Trim French Guiana (South America, ~-53 Lon)
+      // Mainland France is > -5.
+      if (id === "250" && f.geometry && f.geometry.type === "MultiPolygon") {
         f.geometry.coordinates = f.geometry.coordinates.filter(polygon => {
-          const ring = polygon[0];
-          // Rigid check: If any point is < -40, implies it's far west.
-          const hasWesternPoint = ring.some(pt => pt[0] < -40);
-          return !hasWesternPoint;
+          // Use centroid check to be safe (keep if East of -20)
+          const centroid = d3.geoCentroid({type: "Polygon", coordinates: polygon});
+          return centroid[0] > -20;
         });
+      }
+
+      // Russia (643): STITCH the "Alaska tip" back to the East.
+      // The tip is at ~-170 Lon. We want it at ~190 Lon.
+      // Logic: If point.x < 0, point.x += 360.
+      if (id === "643" && f.geometry) {
+        shiftCoords(
+          f.geometry,
+          (pt) => pt[0] < -20, // If significantly West (Alaska tip is -170)
+          (pt) => [pt[0] + 360, pt[1]] // Shift to East (> 180)
+        );
       }
     }
 
     if (continent === "oceania") {
-      // Fiji (242): Artificially shift closer to Australia
-      // Fiji is approx ~178E. Australia is ~130E. Shift Fiji ~25 degrees West.
+      // Fiji (242): Shift 15 deg West to close gap
       if (id === "242" && f.geometry) {
-        const shiftAmount = -15; // Shift West by 15 degrees
-        
-        const shiftPoint = (pt) => {
-          if (!Array.isArray(pt) || pt.length < 2) return pt;
-          return [pt[0] + shiftAmount, pt[1]];
-        };
-
-        const shiftRing = (ring) => ring.map(shiftPoint);
-        const shiftPoly = (poly) => poly.map(shiftRing);
-
-        if (f.geometry.type === "Polygon") {
-          f.geometry.coordinates = shiftPoly(f.geometry.coordinates);
-        } else if (f.geometry.type === "MultiPolygon") {
-          f.geometry.coordinates = f.geometry.coordinates.map(shiftPoly);
-        }
+         shiftCoords(
+           f.geometry,
+           () => true, // Always shift
+           (pt) => [pt[0] - 15, pt[1]]
+         );
       }
     }
   }
