@@ -32,6 +32,22 @@ window.addEventListener("load", () => {
 });
 window.addEventListener("resize", handleResize);
 
+// Traditional Palette
+const GLOBE_COLORS = {
+  ocean: "#004866", 
+  continents: {
+    "north-america": "#e6c288", 
+    "south-america": "#a8c686", 
+    "europe": "#d8a499",        
+    "africa": "#e8d8a5",        
+    "asia": "#c4a484",          
+    "asia": "#c4a484",          
+    "oceania": "#99badd"        
+  },
+  default: "#d0d0d0",
+  stroke: "#000000" // Solid Black
+};
+
 async function initGlobe() {
   const container = document.getElementById("continent-map");
   if (!container) return;
@@ -42,7 +58,10 @@ async function initGlobe() {
   svg = d3.select(container).append("svg")
     .attr("class", "world-svg")
     .attr("viewBox", `0 0 ${width} ${height}`)
-    .attr("preserveAspectRatio", "xMidYMid meet");
+    .attr("preserveAspectRatio", "xMidYMid meet")
+    // Explicit pointer events for touch
+    .style("touch-action", "none")
+    .style("-webkit-tap-highlight-color", "transparent");
 
   g = svg.append("g");
 
@@ -87,8 +106,7 @@ async function initGlobe() {
       isDragging = false;
     });
 
-  svg.call(drag)
-     .style("touch-action", "none");
+  svg.call(drag);
 
   try {
     const topo = await fetchFirstOk(SOURCES.topo, "World Atlas");
@@ -138,6 +156,63 @@ async function initGlobe() {
       return f;
     });
 
+    // --- INITIAL DRAW (Create Elements Once) ---
+    
+    // Ocean Background
+    g.append("path")
+     .datum({type: "Sphere"})
+     .attr("class", "ocean")
+     .attr("d", path)
+     .attr("fill", GLOBE_COLORS.ocean)
+     .attr("stroke", "#000000")
+     .attr("stroke-width", 2);
+
+    // Countries
+    g.selectAll(".country")
+     .data(features)
+     .enter().append("path")
+     .attr("class", "country globe-country")
+     .attr("d", path)
+     .attr("data-continent", d => d.properties.continent)
+     .style("fill", d => GLOBE_COLORS.continents[d.properties.continent] || GLOBE_COLORS.default)
+     .style("stroke", GLOBE_COLORS.stroke)
+     .style("stroke-width", "0.5px") // Half thickness default
+     .style("stroke-opacity", 1)
+     .on("mouseover", function(e, d) {
+        if (isDragging) return; // Ignore if actively dragging
+        const cont = d.properties.continent;
+        if (!cont) return;
+        
+        d3.selectAll(`.country[data-continent='${cont}']`)
+          .style("filter", "brightness(0.7)")
+          .style("stroke", "#000000") // Black on hover
+          .style("stroke-width", "1px"); // Full thickness on hover
+        
+        const tt = document.getElementById("continent-tooltip");
+        tt.innerText = formatContinentName(cont);
+        tt.style.opacity = 1;
+        tt.style.left = (e.pageX + 10) + "px";
+        tt.style.top = (e.pageY - 20) + "px";
+     })
+     .on("mouseout", function(e, d) {
+        const cont = d.properties.continent;
+        if (cont) {
+           d3.selectAll(`.country[data-continent='${cont}']`)
+             .style("filter", null)
+             .style("stroke", GLOBE_COLORS.stroke)
+             .style("stroke-width", null); // Revert to CSS default (0.5px)
+        }
+        document.getElementById("continent-tooltip").style.opacity = 0;
+     })
+     .on("click", function(e, d) {
+        if (hasMoved) return; // Ignore if it was a drag
+        
+        const cont = d.properties.continent;
+        if (cont) {
+          window.location.href = `./quiz.html?continent=${cont}`;
+        }
+     });
+
     // Start Loop
     startRotationLoop();
 
@@ -147,79 +222,15 @@ async function initGlobe() {
   }
 }
 
-// Traditional Palette
-const GLOBE_COLORS = {
-  ocean: "#004866", 
-  continents: {
-    "north-america": "#e6c288", 
-    "south-america": "#a8c686", 
-    "europe": "#d8a499",        
-    "africa": "#e8d8a5",        
-    "asia": "#c4a484",          
-    "oceania": "#99badd"        
-  },
-  default: "#d0d0d0",
-  default: "#d0d0d0",
-  stroke: "#000000" // Solid Black
-};
-
 function render() {
-  g.selectAll(".ocean").remove();
-  g.insert("path", ".country")
-    .datum({type: "Sphere"})
-    .attr("class", "ocean")
-    .attr("d", path)
-    .attr("fill", GLOBE_COLORS.ocean)
-    .attr("stroke", "#000000")
-    .attr("stroke-width", 2);
-
-
-  const countries = g.selectAll(".country")
-    .data(features);
-
-  countries.enter().append("path")
-    .attr("class", "country globe-country")
-    .merge(countries)
-    .attr("d", path)
-    .attr("data-continent", d => d.properties.continent)
-    .style("fill", d => GLOBE_COLORS.continents[d.properties.continent] || GLOBE_COLORS.default)
-    .style("stroke", GLOBE_COLORS.stroke)
-    .style("stroke-width", "0.5px") // Half thickness default
-    .style("stroke-opacity", 1)
-    .on("mouseover", function(e, d) {
-       if (isDragging) return; // Ignore if actively dragging
-       const cont = d.properties.continent;
-       if (!cont) return;
-       
-       d3.selectAll(`.country[data-continent='${cont}']`)
-         .style("filter", "brightness(0.7)")
-         .style("stroke", "#000000") // Black on hover
-         .style("stroke-width", "1px"); // Full thickness on hover
-       
-       const tt = document.getElementById("continent-tooltip");
-       tt.innerText = formatContinentName(cont);
-       tt.style.opacity = 1;
-       tt.style.left = (e.pageX + 10) + "px";
-       tt.style.top = (e.pageY - 20) + "px";
-    })
-    .on("mouseout", function(e, d) {
-       const cont = d.properties.continent;
-       if (cont) {
-          d3.selectAll(`.country[data-continent='${cont}']`)
-            .style("filter", null)
-            .style("stroke", GLOBE_COLORS.stroke)
-            .style("stroke-width", null);
-       }
-       document.getElementById("continent-tooltip").style.opacity = 0;
-    })
-    .on("click", function(e, d) {
-       if (hasMoved) return; // Ignore if it was a drag
-       
-       const cont = d.properties.continent;
-       if (cont) {
-         window.location.href = `./quiz.html?continent=${cont}`;
-       }
-    });
+  // Optimized Render: Only update 'd' attribute
+  if (!path || !g) return;
+  
+  // Update Ocean
+  g.select(".ocean").attr("d", path);
+  
+  // Update Countries
+  g.selectAll(".country").attr("d", path);
 }
 
 function startRotationLoop() {
@@ -282,3 +293,9 @@ async function fetchFirstOk(urls, label) {
   }
   throw new Error(`${label} failed.`);
 }
+
+// Ensure module-level variables are accessible if debugging needs
+window.debugGlobe = {
+  get g() { return g; },
+  get features() { return features; }
+};
