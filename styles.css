@@ -651,50 +651,52 @@ body {
     top: 20px; /* Reduced top spacing for mobile */
   }
   
-  /* Supersized Mobile HUD (Scaled down 25%) */
+  /* Supersized Mobile HUD (Scaled down 35% from previous) */
   #top-hud {
-    padding: 15px 5px; 
-    gap: 5px;
-    width: 98%;
-    border-radius: 25px; 
+    padding: 10px 5px; /* Reduced vertical padding */
+    gap: 4px;
+    width: 90%; /* Slightly less width to feel smaller */
+    border-radius: 20px; 
     justify-content: space-evenly;
   }
   
   .hud-item { 
-    font-size: 0.7rem; 
+    font-size: 0.55rem; /* Small but legible */
     letter-spacing: 0.5px; 
   }
   .hud-val { 
-    font-size: 1.35rem; /* Reduced from 1.8rem */
+    font-size: 1.0rem; /* Standardized size */
   }
 
-  /* Back Button (Scaled down) */
+  /* Back Button (Kept same as requested) */
   .back-btn {
     left: 5px;
-    width: 40px; /* Reduced from 52px */
+    width: 40px; 
     height: 40px;
   }
   .back-btn svg { width: 22px; height: 22px; }
 
-  /* Supersized Prompts & Feedback (Scaled down) */
+  /* Supersized Prompts (Kept same) */
   #prompt-container {
-    top: 110px; /* Pulled up slightly */
+    top: 100px; /* Pulled up to match smaller HUD */
     padding: 0 10px;
   }
   #find-label {
-    font-size: 1.1rem; /* Reduced from 1.5rem */
+    font-size: 1.1rem; 
     letter-spacing: 2px;
   }
   #main-prompt {
-    font-size: 2.4rem; /* Reduced from 3.2rem */
+    font-size: 2.4rem; 
     line-height: 1.1;
   }
+  
+  /* Feedback Pillbox (Scaled down 35%) */
   #sub-prompt {
-    font-size: 1.0rem; /* Reduced from 1.3rem */
-    padding: 10px 24px;
-    border-radius: 40px;
-    width: 90%; 
-    box-shadow: 0 5px 20px rgba(0,0,0,0.6);
+    font-size: 0.85rem; /* Compact feedback */
+    padding: 8px 20px;
+    border-radius: 30px;
+    width: 85%; 
+    box-shadow: 0 3px 10px rgba(0,0,0,0.5);
   }
 
   /* Adjust HUD items to stack tighter if needed */
