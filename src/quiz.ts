@@ -1,5 +1,6 @@
 import * as d3 from "d3";
 import * as topojson from "topojson-client";
+import "./styles.css";
 import { SOURCES, pad3, fetchFirstOk, resolveContinent, clamp, CountryMeta } from "./utils";
 
 // Global Game State

@@ -1,5 +1,6 @@
 import * as d3 from "d3";
 import * as topojson from "topojson-client";
+import "./styles.css";
 import { startQuiz, exitQuiz } from "./quiz";
 import { SOURCES, GLOBE_COLORS, pad3, fetchFirstOk, resolveContinent, formatContinentName, CountryMeta } from "./utils";
 
