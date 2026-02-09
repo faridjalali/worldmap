@@ -1,25 +1,8 @@
-const SOURCES = {
-  topo: [
-    "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json",
-    "https://unpkg.com/world-atlas@2/countries-110m.json"
-  ],
-  countries: [
-    "https://cdn.jsdelivr.net/npm/world-countries@5.1.0/countries.json",
-    "https://unpkg.com/world-countries@5.1.0/countries.json"
-  ]
-};
+
+import { SOURCES, CONTINENTS, pad3, fetchFirstOk, resolveContinent } from "./utils.js";
 
 const mapContainer = document.getElementById("continent-map");
 const tooltip = document.getElementById("continent-tooltip");
-
-const CONTINENTS = {
-  "north-america": { label: "North America" },
-  "south-america": { label: "South America" },
-  "europe": { label: "Europe" },
-  "africa": { label: "Africa" },
-  "asia": { label: "Asia" },
-  "oceania": { label: "Oceania" }
-};
 
 let svg, g, projection, path, features = [];
 
@@ -129,38 +112,4 @@ function handleClick(event, d) {
   const key = d.__continent;
   if (!key) return;
   window.location.href = `./quiz.html?continent=${key}`;
-}
-
-function resolveContinent(meta) {
-  const region = (meta.region || "").toLowerCase();
-  const subregion = (meta.subregion || "").toLowerCase();
-
-  if (region === "americas") {
-    if (subregion.includes("south")) return "south-america";
-    return "north-america";
-  }
-  if (region === "europe") return "europe";
-  if (region === "africa") return "africa";
-  if (region === "asia") return "asia";
-  if (region === "oceania") return "oceania";
-  return null;
-}
-
-function pad3(n) {
-  const s = String(n);
-  return s.length >= 3 ? s : s.padStart(3, "0");
-}
-
-async function fetchFirstOk(urls, label) {
-  let lastErr = null;
-  for (const url of urls) {
-    try {
-      const res = await fetch(url, { mode: "cors" });
-      if (!res.ok) throw new Error(`${label} fetch failed (${res.status})`);
-      return await res.json();
-    } catch (err) {
-      lastErr = err;
-    }
-  }
-  throw new Error(`${label} failed on all sources. ${lastErr ? lastErr.message : ""}`);
 }

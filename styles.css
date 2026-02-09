@@ -1,9 +1,9 @@
 :root {
   /* Traditional Ocean Background (Deep Blue for contrast, but ocean-like) */
-  --bg-deep: #0d6f99; /* Matched to Globe */ 
+  --bg-deep: #0d6f99; /* Matched to Globe */
   /* Traditional Borders (Solid Black for Safari) */
-  --map-stroke: #000000; 
-  
+  --map-stroke: #000000;
+
   --neon-blue: #00f3ff;
   --neon-pink: #ff0055;
   --neon-green: #00ff9d;
@@ -18,7 +18,7 @@
   --c-af: #e8d8a5; /* Desert Yellow */
   --c-as: #c4a484; /* Earthy Brown */
   --c-oc: #99badd; /* Light Blue/Teal */
-  
+
   color-scheme: dark; /* Hint to browser to use dark UA styles */
 }
 
@@ -66,51 +66,68 @@ body {
   transition:
     fill 0.3s,
     opacity 0.3s,
-    filter 0.3s,
     stroke 0.3s;
   vector-effect: non-scaling-stroke;
   fill: rgba(120, 180, 220, 0.4);
+  will-change: fill, opacity;
 }
 
-.state[data-continent="north-america"] {
+.country {
+  /* Base globe country style */
+  fill: #d0d0d0;
+  stroke: var(--map-stroke);
+  stroke-width: 0.5px;
+  stroke-opacity: 1;
+  transition:
+    fill 0.2s,
+    opacity 0.2s,
+    stroke 0.2s;
+  will-change: fill, stroke;
+}
+
+/* Consolidated Highlight Rules */
+.state[data-continent="north-america"],
+.country[data-continent="north-america"],
+.country.highlight[data-continent="north-america"] {
   fill: var(--c-na);
 }
-.state[data-continent="south-america"] {
+.state[data-continent="south-america"],
+.country[data-continent="south-america"],
+.country.highlight[data-continent="south-america"] {
   fill: var(--c-sa);
 }
-.state[data-continent="europe"] {
+.state[data-continent="europe"],
+.country[data-continent="europe"],
+.country.highlight[data-continent="europe"] {
   fill: var(--c-eu);
 }
-.state[data-continent="africa"] {
+.state[data-continent="africa"],
+.country[data-continent="africa"],
+.country.highlight[data-continent="africa"] {
   fill: var(--c-af);
 }
-.state[data-continent="asia"] {
+.state[data-continent="asia"],
+.country[data-continent="asia"],
+.country.highlight[data-continent="asia"] {
   fill: var(--c-as);
 }
-.state[data-continent="oceania"] {
+.state[data-continent="oceania"],
+.country[data-continent="oceania"],
+.country.highlight[data-continent="oceania"] {
   fill: var(--c-oc);
 }
 
-/* Darker variants for Zoomed/Active State (Safari-safe) */
-.state.active-focused[data-continent="north-america"] { fill: #8A7451; }
-.state.active-focused[data-continent="south-america"] { fill: #657750; }
-.state.active-focused[data-continent="europe"]        { fill: #82625C; }
-.state.active-focused[data-continent="africa"]        { fill: #8B8263; }
-.state.active-focused[data-continent="asia"]          { fill: #76624F; }
-.state.active-focused[data-continent="oceania"]       { fill: #5C7085; }
-
 .state:hover {
   opacity: 0.9;
-  stroke: #000000; /* Force black on hover */
-  stroke-width: 1px; /* "Full thickness" */
-  filter: brightness(0.8); /* Darken on hover */
+  stroke: #000000;
+  stroke-width: 1px;
 }
+
 /* Active/Zoomed State */
 .state.active-focused {
   opacity: 1;
-  stroke: #000000; /* Force Black */
-  stroke-width: 1px; /* Full Thickness */
-  /* Filter removed -> replaced by explicit fill changes above */
+  stroke: #000000;
+  stroke-width: 1px;
 }
 
 .country.highlight {
@@ -154,10 +171,11 @@ body {
 .city-halo {
   fill: none;
   stroke: var(--neon-blue);
-  stroke-width: 2px; /* Thicker start */
+  stroke-width: 2px;
   vector-effect: non-scaling-stroke;
   opacity: 0.8;
-  animation: pulseHalo 1.5s infinite ease-in-out; /* Faster, smooth throb */
+  animation: pulseHalo 1.5s infinite ease-in-out;
+  will-change: transform, opacity, stroke-width;
 }
 
 @keyframes pulseHalo {
@@ -178,7 +196,10 @@ body {
   }
 }
 /* Ensure origin is center for scaling */
-.city-halo { transform-box: fill-box; transform-origin: center; }
+.city-halo {
+  transform-box: fill-box;
+  transform-origin: center;
+}
 
 .city-node {
   fill: var(--neon-blue);
@@ -205,8 +226,6 @@ body {
   stroke: var(--neon-green);
   animation: none;
 }
-
-
 
 #ui-layer {
   position: absolute;
@@ -325,7 +344,9 @@ body {
 .active .toggle-switch {
   background: var(--neon-blue);
 }
-.active .toggle-knob { left: 21px; }
+.active .toggle-knob {
+  left: 21px;
+}
 
 .toggle-container.disabled {
   opacity: 0.5;
@@ -371,15 +392,18 @@ body {
   display: inline-block;
   padding: 8px 24px;
   border-radius: 50px; /* Pill shape */
-  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
   margin-top: 15px;
   font-weight: 400; /* Normal weight for body text */
   opacity: 0; /* Hidden by default */
   visibility: hidden; /* Ensure it's ignored by clicks too */
-  transition: opacity 0.3s, visibility 0.3s;
+  transition:
+    opacity 0.3s,
+    visibility 0.3s;
 }
 
-#sub-prompt.show, #sub-prompt.persist {
+#sub-prompt.show,
+#sub-prompt.persist {
   opacity: 1 !important;
   visibility: visible !important;
 }
@@ -469,8 +493,8 @@ body {
   overflow: hidden;
   background:
     radial-gradient(
-      1200px 600px at 50% 110%, /* Moved glow to Bottom */
-      rgba(0, 243, 255, 0.15),
+      1200px 600px at 50% 110%,
+      /* Moved glow to Bottom */ rgba(0, 243, 255, 0.15),
       transparent 60%
     ),
     linear-gradient(180deg, #000000 0%, #0c0c0c 100%); /* Pure Black (Top) -> Dark Grey (Bottom) */
@@ -506,44 +530,10 @@ body {
   height: 100%;
 }
 
-.country {
-  fill: #d0d0d0; /* Default Grey/Paper color */
-  stroke: var(--map-stroke);
-  stroke-width: 0.5px;
-  stroke-opacity: 1;
-  transition:
-    fill 0.2s,
-    opacity 0.2s,
-    stroke 0.2s;
-}
-
-.country.dim {
-  opacity: 0.15;
-}
-
 .country.highlight {
   opacity: 1;
   stroke: #000000;
   stroke-width: 1px;
-}
-
-.country.highlight[data-continent="north-america"] {
-  fill: var(--c-na);
-}
-.country.highlight[data-continent="south-america"] {
-  fill: var(--c-sa);
-}
-.country.highlight[data-continent="europe"] {
-  fill: var(--c-eu);
-}
-.country.highlight[data-continent="africa"] {
-  fill: var(--c-af);
-}
-.country.highlight[data-continent="asia"] {
-  fill: var(--c-as);
-}
-.country.highlight[data-continent="oceania"] {
-  fill: var(--c-oc);
 }
 
 .map-tooltip {
@@ -566,7 +556,7 @@ body {
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(0, 243, 255, 0.3); /* Blue-ish border */
-  box-shadow: 
+  box-shadow:
     0 8px 32px 0 rgba(0, 0, 0, 0.3),
     inset 0 0 0 1px rgba(255, 255, 255, 0.1);
   color: #ffffff !important; /* White text for glass */
@@ -583,9 +573,9 @@ body {
 .world-btn:hover {
   background: rgba(255, 255, 255, 0.2);
   transform: translateY(-2px);
-  box-shadow: 
-    0 8px 40px 0 rgba(0, 243, 255, 0.2), /* Neon Blue glow on hover */
-    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 8px 40px 0 rgba(0, 243, 255, 0.2),
+    /* Neon Blue glow on hover */ inset 0 0 0 1px rgba(255, 255, 255, 0.4);
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
 }
 
@@ -633,7 +623,7 @@ body {
   .landing-header {
     margin-bottom: 10px;
   }
-  
+
   /* Hide Desktop "Entire World" button on mobile */
   /* Re-purposed to be the main button centered below header */
   .world-btn.top-right {
@@ -642,7 +632,7 @@ body {
     margin: 10px auto 20px auto; /* Center it with spacing */
     width: fit-content;
     text-align: center;
-    border: 1px solid rgba(255,255,255,0.2); /* Add subtle border for 'traditional' feel? Optional. */
+    border: 1px solid rgba(255, 255, 255, 0.2); /* Add subtle border for 'traditional' feel? Optional. */
   }
 
   /* FORCE Show Map (Globe) on index2.html mobile */
@@ -659,7 +649,7 @@ body {
   /* Show List - Disable for now as we are doing 3D globe only */
   /* .mobile-list { display: flex; } */
   .mobile-list {
-     display: none !important;
+    display: none !important;
   }
 
   /* Adjust HUD and Back Button on mobile */
@@ -667,7 +657,7 @@ body {
   #top-bar {
     top: 20px; /* Reduced top spacing for mobile */
   }
-  
+
   /* Supersized Mobile HUD (Compact & Sleek) */
   #top-hud {
     padding: 10px 20px;
@@ -675,22 +665,22 @@ body {
     width: fit-content; /* Shrink to fit content */
     min-width: 60%; /* Prevent being too tiny */
     max-width: 95%;
-    border-radius: 30px; 
+    border-radius: 30px;
     justify-content: center;
     margin: 0 auto; /* Ensure centering */
   }
-  
+
   .hud-group {
     gap: 6px; /* Space between Label and Value */
   }
-  
-  .hud-item { 
-    font-size: 0.7rem; 
+
+  .hud-item {
+    font-size: 0.7rem;
     letter-spacing: 0.5px;
     font-weight: 700;
   }
-  .hud-val { 
-    font-size: 1.1rem; 
+  .hud-val {
+    font-size: 1.1rem;
   }
 
   /* Back Button (Bottom Right for Mobile) */
@@ -701,29 +691,34 @@ body {
     transform: none; /* Remove vertical centering */
     right: 25px; /* Healthy side margin */
     bottom: 35px; /* Healthy bottom margin */
-    width: 44px; 
+    width: 44px;
     height: 44px;
     background: rgba(15, 15, 15, 0.8); /* Ensure visibility */
     border: 1px solid rgba(255, 255, 255, 0.3);
     z-index: 1000;
   }
-  .back-btn:hover { transform: scale(1.1); } /* Simple scale on active */
-  .back-btn svg { width: 24px; height: 24px; }
+  .back-btn:hover {
+    transform: scale(1.1);
+  } /* Simple scale on active */
+  .back-btn svg {
+    width: 24px;
+    height: 24px;
+  }
 
   /* Prompts */
   #prompt-container {
-    top: 105px; 
+    top: 105px;
     padding: 0 10px;
   }
   #find-label {
-    font-size: 1.1rem; 
+    font-size: 1.1rem;
     letter-spacing: 2px;
   }
   #main-prompt {
-    font-size: 2.3rem; 
+    font-size: 2.3rem;
     line-height: 1.1;
   }
-  
+
   /* Feedback Pillbox (Fit to Text) */
   #sub-prompt {
     font-size: 0.9rem;
@@ -731,11 +726,13 @@ body {
     border-radius: 40px;
     width: fit-content; /* Shrink to text */
     max-width: 85%;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
   }
 
   /* Adjust HUD items to stack tighter if needed */
-  .hud-group { margin: 0; }
-  
-/* Mobile Layout End */
+  .hud-group {
+    margin: 0;
+  }
+
+  /* Mobile Layout End */
 }

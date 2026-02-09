@@ -1,16 +1,6 @@
 
-const SOURCES = {
-  topo: [
-    "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json",
-    "https://unpkg.com/world-atlas@2/countries-110m.json"
-  ],
-  countries: [
-    "https://cdn.jsdelivr.net/npm/world-countries@5.1.0/countries.json",
-    "https://unpkg.com/world-countries@5.1.0/countries.json"
-  ]
-};
-
 import { startQuiz, exitQuiz } from "./quiz.js";
+import { SOURCES, GLOBE_COLORS, pad3, fetchFirstOk, resolveContinent, formatContinentName } from "./utils.js";
 
 // Global Module State
 let width, height;
@@ -20,19 +10,28 @@ let isDragging = false;
 let hasMoved = false; // Shared state for Click vs Drag
 let rotationTimer;
 
+// Sub-selections for optimized updates
+let oceanSelection, countriesSelection;
+
 // Button Wiring
 window.addEventListener("load", () => {
    // Wire up World Button
-   document.getElementById("btn-world-start").onclick = (e) => {
-     e.preventDefault();
-     switchToQuiz("world");
-   };
+   const btnWorld = document.getElementById("btn-world-start");
+   if (btnWorld) {
+     btnWorld.onclick = (e) => {
+       e.preventDefault();
+       switchToQuiz("world");
+     };
+   }
    
    // Wire up Back Button
-   document.getElementById("btn-quiz-back").onclick = (e) => {
-     e.preventDefault();
-     exitQuiz();
-   };
+   const btnBack = document.getElementById("btn-quiz-back");
+   if (btnBack) {
+      btnBack.onclick = (e) => {
+       e.preventDefault();
+       exitQuiz();
+     };
+   }
 
    if (window.d3 && window.topojson) {
       initGlobe();
@@ -47,26 +46,14 @@ window.addEventListener("load", () => {
 });
 
 function switchToQuiz(continent) {
-  document.getElementById("view-landing").classList.add("hidden");
-  document.getElementById("view-quiz").classList.remove("hidden");
+  const landing = document.getElementById("view-landing");
+  const quiz = document.getElementById("view-quiz");
+  
+  if (landing) landing.classList.add("hidden");
+  if (quiz) quiz.classList.remove("hidden");
+  
   startQuiz(continent);
 }
-
-// Traditional Palette
-const GLOBE_COLORS = {
-  ocean: "#004866", 
-  continents: {
-    "north-america": "#e6c288", 
-    "south-america": "#a8c686", 
-    "europe": "#d8a499",        
-    "africa": "#e8d8a5",        
-    "asia": "#c4a484",          
-    "asia": "#c4a484",          
-    "oceania": "#99badd"        
-  },
-  default: "#d0d0d0",
-  stroke: "#000000" // Solid Black
-};
 
 async function initGlobe() {
   const container = document.getElementById("continent-map");
@@ -74,6 +61,9 @@ async function initGlobe() {
   
   width = container.clientWidth;
   height = container.clientHeight;
+
+  // Clear existing if any (re-init safety)
+  d3.select(container).selectAll("*").remove();
 
   svg = d3.select(container).append("svg")
     .attr("class", "world-svg")
@@ -85,7 +75,6 @@ async function initGlobe() {
 
   g = svg.append("g");
 
-  // Setup Orthographic Projection
   // Setup Orthographic Projection
   const size = Math.min(width, height);
   const isMobile = window.innerWidth < 768; 
@@ -109,6 +98,7 @@ async function initGlobe() {
       hasMoved = false; // Reset module-level flag
       startX = event.x;
       startY = event.y;
+      if (rotationTimer) rotationTimer.stop(); // Pause rotation while dragging
     })
     .on("drag", (event) => {
       const dx = event.x - startX;
@@ -117,34 +107,21 @@ async function initGlobe() {
       
       if (dist > 5) hasMoved = true;
       
-      
       // Throttled Rotation using requestAnimationFrame
-      // This prevents the high-frequency touch events from overwhelming the render loop
       const sensitivity = 75 / projection.scale();
       const rotate = projection.rotate();
       
-      // Calculate new rotation based on drag
       const nextRotate = [
         rotate[0] + event.dx * sensitivity,
         rotate[1] - event.dy * sensitivity
       ];
       
       projection.rotate(nextRotate);
-      
-      // Only render if we aren't already waiting for a frame
-      if (!window.renderRequested) {
-         window.renderRequested = true;
-         requestAnimationFrame(() => {
-            try {
-               render();
-            } finally {
-               window.renderRequested = false;
-            }
-         });
-      }
+      requestRender();
     })
     .on("end", () => {
       isDragging = false;
+      startRotationLoop(); // Resume rotation
     });
 
   svg.call(drag);
@@ -200,16 +177,16 @@ async function initGlobe() {
     // --- INITIAL DRAW (Create Elements Once) ---
     
     // Ocean Background
-    g.append("path")
+    oceanSelection = g.append("path")
      .datum({type: "Sphere"})
      .attr("class", "ocean")
      .attr("d", path)
      .attr("fill", GLOBE_COLORS.ocean)
-     .attr("stroke", "#000000")
+     .attr("stroke", GLOBE_COLORS.stroke)
      .attr("stroke-width", 2);
 
     // Countries
-    g.selectAll(".country")
+    countriesSelection = g.selectAll(".country")
      .data(features)
      .enter().append("path")
      .attr("class", "country globe-country")
@@ -219,40 +196,9 @@ async function initGlobe() {
      .style("stroke", GLOBE_COLORS.stroke)
      .style("stroke-width", "0.5px") // Half thickness default
      .style("stroke-opacity", 1)
-     .on("mouseover", function(e, d) {
-        if (isDragging) return; // Ignore if actively dragging
-        const cont = d.properties.continent;
-        if (!cont) return;
-        
-        d3.selectAll(`.country[data-continent='${cont}']`)
-          .style("filter", "brightness(0.7)")
-          .style("stroke", "#000000") // Black on hover
-          .style("stroke-width", "1px"); // Full thickness on hover
-        
-        const tt = document.getElementById("continent-tooltip");
-        tt.innerText = formatContinentName(cont);
-        tt.style.opacity = 1;
-        tt.style.left = (e.pageX + 10) + "px";
-        tt.style.top = (e.pageY - 20) + "px";
-     })
-     .on("mouseout", function(e, d) {
-        const cont = d.properties.continent;
-        if (cont) {
-           d3.selectAll(`.country[data-continent='${cont}']`)
-             .style("filter", null)
-             .style("stroke", GLOBE_COLORS.stroke)
-             .style("stroke-width", null); // Revert to CSS default (0.5px)
-        }
-        document.getElementById("continent-tooltip").style.opacity = 0;
-     })
-     .on("click", function(e, d) {
-        if (hasMoved) return; // Ignore if it was a drag
-        
-        const cont = d.properties.continent;
-        if (cont) {
-          switchToQuiz(cont);
-        }
-     });
+     .on("mouseover", handleHover)
+     .on("mouseout", handleMouseOut)
+     .on("click", handleClick);
 
     // Start Loop
     startRotationLoop();
@@ -263,80 +209,95 @@ async function initGlobe() {
   }
 }
 
+function handleHover(e, d) {
+    if (isDragging) return; 
+    const cont = d.properties.continent;
+    if (!cont) return;
+    
+    // Efficiently select only the relevant group
+    // Note: This still uses selectAll but it's scoped. 
+    // Optimization: Add a class to the group directly if possible, or use data attributes.
+    d3.selectAll(`.country[data-continent='${cont}']`)
+      .classed("hovered-continent", true)
+      .style("filter", "brightness(0.7)")
+      .style("stroke", "#000000")
+      .style("stroke-width", "1px");
+    
+    const tt = document.getElementById("continent-tooltip");
+    if (tt) {
+        tt.innerText = formatContinentName(cont);
+        tt.style.opacity = 1;
+        tt.style.left = (e.pageX + 10) + "px";
+        tt.style.top = (e.pageY - 20) + "px";
+    }
+}
+
+function handleMouseOut(e, d) {
+    const cont = d.properties.continent;
+    if (cont) {
+       d3.selectAll(`.country[data-continent='${cont}']`)
+         .classed("hovered-continent", false)
+         .style("filter", null)
+         .style("stroke", GLOBE_COLORS.stroke)
+         .style("stroke-width", null);
+    }
+    const tt = document.getElementById("continent-tooltip");
+    if (tt) tt.style.opacity = 0;
+}
+
+function handleClick(e, d) {
+    if (hasMoved) return; 
+    
+    const cont = d.properties.continent;
+    if (cont) {
+      if (rotationTimer) rotationTimer.stop();
+      switchToQuiz(cont);
+    }
+}
+
+let renderRequested = false;
+function requestRender() {
+    if (!renderRequested) {
+        renderRequested = true;
+        requestAnimationFrame(() => {
+            render();
+            renderRequested = false;
+        });
+    }
+}
+
 function render() {
+  if (!path || !oceanSelection) return;
+  
   // Optimized Render: Only update 'd' attribute
-  if (!path || !g) return;
-  
-  // Update Ocean
-  g.select(".ocean").attr("d", path);
-  
-  // Update Countries
-  g.selectAll(".country").attr("d", path);
+  oceanSelection.attr("d", path);
+  countriesSelection.attr("d", path);
 }
 
 function startRotationLoop() {
-  d3.timer(() => {
+  if (rotationTimer) rotationTimer.stop();
+  rotationTimer = d3.timer((elapsed) => {
     if (isDragging) return;
+    
+    // Smooth, slow rotation
     const rotate = projection.rotate();
     projection.rotate([rotate[0] + 0.2, rotate[1]]);
     render();
   });
 }
 
-function handleResize() {
-  if (!svg) return;
-  const container = document.getElementById("continent-map");
-  if (!container) return;
-  
-  width = container.clientWidth;
-  height = container.clientHeight;
-  const size = Math.min(width, height);
-  const scale = (size / 2) * 0.9; 
+// Window resize handler
+window.addEventListener("resize", () => {
+    if (!svg) return;
+    const container = document.getElementById("continent-map");
+    if (!container) return;
+    
+    width = container.clientWidth;
+    height = container.clientHeight;
+    const size = Math.min(width, height);
+    const scale = (size / 2) * 0.9; 
 
-  svg.attr("viewBox", `0 0 ${width} ${height}`);
-  projection.translate([width / 2, height / 2]).scale(scale);
-  render();
-}
-
-// Helpers
-function pad3(n) {
-  return String(n).padStart(3, "0");
-}
-
-function resolveContinent(meta) {
-  const region = (meta.region || "").toLowerCase();
-  const subregion = (meta.subregion || "").toLowerCase();
-
-  if (region === "americas") {
-    if (subregion.includes("south")) return "south-america";
-    return "north-america";
-  }
-  if (region === "europe") return "europe";
-  if (region === "africa") return "africa";
-  if (region === "asia") return "asia";
-  if (region === "oceania") return "oceania";
-  return null;
-}
-
-function formatContinentName(slug) {
-  if (!slug) return "";
-  return slug.split("-")
-    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
-
-async function fetchFirstOk(urls, label) {
-  for (const url of urls) {
-    try {
-      const res = await fetch(url);
-      if (res.ok) return await res.json();
-    } catch (err) {}
-  }
-  throw new Error(`${label} failed.`);
-}
-
-// Ensure module-level variables are accessible if debugging needs
-window.debugGlobe = {
-  get g() { return g; },
-  get features() { return features; }
-};
+    svg.attr("viewBox", `0 0 ${width} ${height}`);
+    projection.translate([width / 2, height / 2]).scale(scale);
+    requestRender();
+});

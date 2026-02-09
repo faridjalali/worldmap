@@ -660,9 +660,3 @@ export function exitQuiz() {
   if(quiz) quiz.classList.add("hidden");
   if(landing) landing.classList.remove("hidden");
 }
-
-// Auto-start for standalone usage (not SPA)
-if (!document.getElementById("view-landing")) {
-   const params = new URLSearchParams(window.location.search);
-   startQuiz(params.get("continent"));
-}
