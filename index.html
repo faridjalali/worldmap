@@ -18,7 +18,7 @@
     <script>
       const link = document.createElement("link");
       link.rel = "stylesheet";
-      link.href = "./styles.css?v=" + new Date().getTime();
+      link.href = "/src/styles.css?v=" + new Date().getTime();
       document.head.appendChild(link);
     </script>
     <style>
@@ -91,6 +91,6 @@
 
     <script src="https://d3js.org/d3.v7.min.js" defer></script>
     <script src="https://unpkg.com/topojson-client@3" defer></script>
-    <script type="module" src="./landing-globe.js"></script>
+    <script type="module" src="/src/landing-globe.ts"></script>
   </body>
 </html>
