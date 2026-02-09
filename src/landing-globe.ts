@@ -36,6 +36,7 @@ window.addEventListener("load", () => {
       btnBack.onclick = (e) => {
        e.preventDefault();
        exitQuiz();
+       startRotationLoop();
      };
    }
 
